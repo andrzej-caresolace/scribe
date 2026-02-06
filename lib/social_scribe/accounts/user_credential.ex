@@ -9,6 +9,8 @@ defmodule SocialScribe.Accounts.UserCredential do
     field :refresh_token, :string
     field :expires_at, :utc_datetime
     field :email, :string
+    # Salesforce-specific: stores the instance URL for API calls
+    field :instance_url, :string
 
     belongs_to :user, SocialScribe.Accounts.User
 
@@ -18,7 +20,7 @@ defmodule SocialScribe.Accounts.UserCredential do
   @doc false
   def changeset(user_credential, attrs) do
     user_credential
-    |> cast(attrs, [:provider, :uid, :token, :refresh_token, :expires_at, :user_id, :email])
+    |> cast(attrs, [:provider, :uid, :token, :refresh_token, :expires_at, :user_id, :email, :instance_url])
     |> validate_required([:provider, :uid, :token, :expires_at, :user_id, :email])
   end
 
@@ -26,5 +28,15 @@ defmodule SocialScribe.Accounts.UserCredential do
     user_credential
     |> cast(attrs, [:provider, :uid, :token, :refresh_token, :expires_at, :user_id, :email])
     |> validate_required([:provider, :uid, :token, :expires_at, :user_id, :email])
+  end
+
+  @doc """
+  Changeset for Salesforce credentials.
+  Requires instance_url for API calls.
+  """
+  def salesforce_changeset(user_credential, attrs) do
+    user_credential
+    |> cast(attrs, [:provider, :uid, :token, :refresh_token, :expires_at, :user_id, :email, :instance_url])
+    |> validate_required([:provider, :uid, :token, :refresh_token, :expires_at, :user_id, :email, :instance_url])
   end
 end
