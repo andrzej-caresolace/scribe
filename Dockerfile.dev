@@ -1,0 +1,40 @@
+# Development Dockerfile for Phoenix LiveView
+FROM elixir:1.18-alpine
+
+# Install build dependencies and inotify for live reload
+RUN apk add --no-cache \
+    build-base \
+    git \
+    inotify-tools \
+    postgresql-client
+
+WORKDIR /app
+
+# Install hex + rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Copy mix files first for better caching
+COPY mix.exs mix.lock ./
+
+# Install dependencies
+RUN mix deps.get
+
+# Copy config files
+COPY config config
+
+# Copy the rest of the application
+COPY . .
+
+# Setup assets (tailwind + esbuild)
+RUN mix assets.setup
+
+# Expose port
+EXPOSE 4000
+
+# Set environment
+ENV MIX_ENV=dev
+
+# Start command - setup database and run server
+CMD ["sh", "-c", "mix ecto.create && mix ecto.migrate && mix phx.server"]
+
