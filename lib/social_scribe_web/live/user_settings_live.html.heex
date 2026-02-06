@@ -138,6 +138,62 @@
 
   <div class="bg-white  shadow-xl rounded-lg p-6 md:p-8">
     <h2 class="text-2xl font-semibold mb-6 text-slate-700 ">
+      Connected Salesforce Accounts
+    </h2>
+
+    <%= if not Enum.empty?(@salesforce_accounts) do %>
+      <ul class="space-y-4 mb-8">
+        <li
+          :for={account <- @salesforce_accounts}
+          class="flex justify-between items-center p-4 bg-slate-50  rounded-md shadow"
+        >
+          <div>
+            <p class="font-medium text-slate-700 ">
+              Salesforce Account
+            </p>
+            <p class="text-sm text-slate-500 ">
+              <%= if account.email do %>
+                {account.email}
+              <% end %>
+              <%= if account.instance_url do %>
+                <span class="text-xs text-slate-400 ml-2">({account.instance_url})</span>
+              <% end %>
+            </p>
+          </div>
+          <!-- Future: Add a "Disconnect" button here -->
+        </li>
+      </ul>
+    <% else %>
+      <p class="mb-8 text-slate-600 ">
+        You haven't connected any Salesforce accounts yet.
+      </p>
+    <% end %>
+
+    <div>
+      <.link
+        href={~p"/auth/salesforce"}
+        method="get"
+        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#00A1E0] hover:bg-[#0088C7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00A1E0] "
+      >
+        <svg
+          class="-ml-1 mr-3 h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M10.006 5.415a4.195 4.195 0 013.045-1.306c1.56 0 2.954.9 3.69 2.205.63-.3 1.35-.45 2.1-.45 2.85 0 5.159 2.34 5.159 5.22s-2.31 5.22-5.16 5.22c-.39 0-.78-.045-1.155-.12-.6 1.17-1.845 1.98-3.27 1.98a3.61 3.61 0 01-1.65-.405 4.187 4.187 0 01-3.705 2.235c-2.07 0-3.81-1.5-4.155-3.48a3.2 3.2 0 01-.63.06c-1.875 0-3.39-1.545-3.39-3.45 0-1.305.72-2.43 1.77-3.015a4.921 4.921 0 01-.33-1.77C2.325 5.67 4.47 3.5 7.14 3.5c1.185 0 2.265.435 3.105 1.155l-.24.76z"/>
+        </svg>
+        <%= if Enum.empty?(@salesforce_accounts) do %>
+          Connect Salesforce
+        <% else %>
+          Connect another Salesforce Account
+        <% end %>
+      </.link>
+    </div>
+  </div>
+
+  <div class="bg-white  shadow-xl rounded-lg p-6 md:p-8">
+    <h2 class="text-2xl font-semibold mb-6 text-slate-700 ">
       Connected Facebook Account
     </h2>
 
