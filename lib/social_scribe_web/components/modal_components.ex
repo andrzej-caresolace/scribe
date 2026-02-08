@@ -33,6 +33,7 @@ defmodule SocialScribeWeb.ModalComponents do
   attr :target, :any, default: nil
   attr :error, :string, default: nil
   attr :id, :string, default: "contact-select"
+  attr :on_create_new, :string, default: nil
 
   def contact_select(assigns) do
     ~H"""
@@ -119,9 +120,18 @@ defmodule SocialScribeWeb.ModalComponents do
           </div>
           <div
             :if={!@loading && Enum.empty?(@contacts) && @query != ""}
-            class="px-4 py-2 text-sm text-gray-500"
+            class="px-4 py-3 text-sm text-gray-500"
           >
-            No contacts found
+            <p>No contacts found for "<span class="font-medium">{@query}</span>"</p>
+            <button
+              :if={@on_create_new}
+              type="button"
+              phx-click={@on_create_new}
+              phx-target={@target}
+              class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-orange-50 text-orange-700 text-xs font-medium hover:bg-orange-100 transition-colors"
+            >
+              <.icon name="hero-user-plus" class="h-4 w-4" /> Create new contact from meeting
+            </button>
           </div>
           <button
             :for={contact <- @contacts}

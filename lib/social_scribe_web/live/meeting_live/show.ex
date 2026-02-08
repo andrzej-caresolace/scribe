@@ -218,6 +218,102 @@ defmodule SocialScribeWeb.MeetingLive.Show do
     end
   end
 
+  # Generate suggestions from transcript for a brand new contact (no existing CRM record)
+  @impl true
+  def handle_info({:generate_suggestions_for_new_contact, :hubspot, meeting}, socket) do
+    case HubspotSuggestions.generate_suggestions_from_meeting(meeting) do
+      {:ok, suggestions} ->
+        send_update(SocialScribeWeb.MeetingLive.HubspotModalComponent,
+          id: "hubspot-modal",
+          suggestions: suggestions,
+          loading: false
+        )
+
+      {:error, reason} ->
+        send_update(SocialScribeWeb.MeetingLive.HubspotModalComponent,
+          id: "hubspot-modal",
+          error: "Failed to extract contact info: #{inspect(reason)}",
+          loading: false
+        )
+    end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:generate_suggestions_for_new_contact, :salesforce, meeting}, socket) do
+    case SalesforceSuggestions.generate_suggestions_from_meeting(meeting) do
+      {:ok, suggestions} ->
+        send_update(SocialScribeWeb.MeetingLive.SalesforceModalComponent,
+          id: "salesforce-modal",
+          suggestions: suggestions,
+          loading: false
+        )
+
+      {:error, reason} ->
+        send_update(SocialScribeWeb.MeetingLive.SalesforceModalComponent,
+          id: "salesforce-modal",
+          error: "Failed to extract contact info: #{inspect(reason)}",
+          loading: false
+        )
+    end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:create_hubspot_contact, properties, credential}, socket) do
+    case HubspotApi.create_contact(credential, properties) do
+      {:ok, _contact} ->
+        socket =
+          socket
+          |> put_flash(:info, "Successfully created contact in HubSpot")
+          |> push_patch(to: ~p"/dashboard/meetings/#{socket.assigns.meeting}")
+
+        {:noreply, socket}
+
+      {:error, {:conflict, _body}} ->
+        send_update(SocialScribeWeb.MeetingLive.HubspotModalComponent,
+          id: "hubspot-modal",
+          error: "A contact with this email already exists in HubSpot",
+          loading: false
+        )
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        send_update(SocialScribeWeb.MeetingLive.HubspotModalComponent,
+          id: "hubspot-modal",
+          error: "Failed to create contact: #{inspect(reason)}",
+          loading: false
+        )
+
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info({:create_salesforce_contact, properties, credential}, socket) do
+    case SalesforceApi.create_contact(credential, properties) do
+      {:ok, _contact} ->
+        socket =
+          socket
+          |> put_flash(:info, "Successfully created contact in Salesforce")
+          |> push_patch(to: ~p"/dashboard/meetings/#{socket.assigns.meeting}")
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        send_update(SocialScribeWeb.MeetingLive.SalesforceModalComponent,
+          id: "salesforce-modal",
+          error: "Failed to create contact: #{inspect(reason)}",
+          loading: false
+        )
+
+        {:noreply, socket}
+    end
+  end
+
   defp normalize_contact(contact) do
     # Contact is already formatted with atom keys from HubspotApi.format_contact
     contact

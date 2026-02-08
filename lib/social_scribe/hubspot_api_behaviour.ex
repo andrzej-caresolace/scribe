@@ -26,6 +26,9 @@ defmodule SocialScribe.HubspotApiBehaviour do
             ) ::
               {:ok, map() | :no_updates} | {:error, any()}
 
+  @callback create_contact(credential :: UserCredential.t(), properties :: map()) ::
+              {:ok, map()} | {:error, any()}
+
   def search_contacts(credential, query) do
     impl().search_contacts(credential, query)
   end
@@ -40,6 +43,10 @@ defmodule SocialScribe.HubspotApiBehaviour do
 
   def apply_updates(credential, contact_id, updates_list) do
     impl().apply_updates(credential, contact_id, updates_list)
+  end
+
+  def create_contact(credential, properties) do
+    impl().create_contact(credential, properties)
   end
 
   defp impl do

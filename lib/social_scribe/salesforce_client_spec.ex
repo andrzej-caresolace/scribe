@@ -13,6 +13,7 @@ defmodule SocialScribe.SalesforceClientSpec do
   @callback get_contact(credential(), binary()) :: api_ok(map())
   @callback update_contact(credential(), binary(), map()) :: api_ok(map())
   @callback apply_updates(credential(), binary(), list(map())) :: api_ok(map() | :no_updates)
+  @callback create_contact(credential(), map()) :: api_ok(map())
 
   # Dynamic dispatch helpers
 
@@ -20,6 +21,7 @@ defmodule SocialScribe.SalesforceClientSpec do
   def get_contact(cred, id), do: adapter().get_contact(cred, id)
   def update_contact(cred, id, patch), do: adapter().update_contact(cred, id, patch)
   def apply_updates(cred, id, ops), do: adapter().apply_updates(cred, id, ops)
+  def create_contact(cred, props), do: adapter().create_contact(cred, props)
 
   defp adapter do
     Application.get_env(:social_scribe, :salesforce_client, SocialScribe.SalesforceApi)

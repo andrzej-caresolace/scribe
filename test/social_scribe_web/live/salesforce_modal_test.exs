@@ -49,7 +49,7 @@ defmodule SocialScribeWeb.SalesforceModalTest do
       {:ok, _view, html} = live(conn, ~p"/dashboard/meetings/#{meeting.id}")
 
       assert html =~ "Salesforce Integration"
-      assert html =~ "Update Salesforce Contact"
+      assert html =~ "Update Salesforce"
     end
   end
 
@@ -69,7 +69,7 @@ defmodule SocialScribeWeb.SalesforceModalTest do
       {:ok, _view, html} = live(conn, ~p"/dashboard/meetings/#{meeting.id}")
 
       refute html =~ "Salesforce Integration"
-      refute html =~ "Update Salesforce Contact"
+      refute html =~ "Update Salesforce"
     end
 
     test "does not show Salesforce modal when accessing route without credential", %{

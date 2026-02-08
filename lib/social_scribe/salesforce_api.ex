@@ -163,6 +163,39 @@ defmodule SocialScribe.SalesforceApi do
   end
 
   @doc """
+  Creates a new contact in Salesforce.
+  `properties` should be a map of internal field names to values.
+  Fields are mapped to Salesforce API names automatically.
+  """
+  def create_contact(%UserCredential{} = credential, properties) when is_map(properties) do
+    with_token_refresh(credential, fn cred ->
+      # Map internal field names to Salesforce field names
+      sf_properties =
+        Enum.reduce(properties, %{}, fn {field, value}, acc ->
+          sf_field = map_field_to_salesforce(to_string(field))
+          Map.put(acc, sf_field, value)
+        end)
+
+      url = "/services/data/#{@api_version}/sobjects/Contact"
+
+      case Tesla.post(client(cred.token, cred.instance_url), url, sf_properties) do
+        {:ok, %Tesla.Env{status: 201, body: %{"id" => new_id}}} ->
+          # Fetch the created contact to return it formatted
+          get_contact(credential, new_id)
+
+        {:ok, %Tesla.Env{status: 200, body: %{"id" => new_id}}} ->
+          get_contact(credential, new_id)
+
+        {:ok, %Tesla.Env{status: status, body: body}} ->
+          {:error, {:api_error, status, body}}
+
+        {:error, reason} ->
+          {:error, {:http_error, reason}}
+      end
+    end)
+  end
+
+  @doc """
   Searches for contacts by email address.
   Useful for finding meeting attendees.
   """

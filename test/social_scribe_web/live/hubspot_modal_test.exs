@@ -74,7 +74,7 @@ defmodule SocialScribeWeb.HubspotModalTest do
       {:ok, _view, html} = live(conn, ~p"/dashboard/meetings/#{meeting.id}")
 
       refute html =~ "HubSpot Integration"
-      refute html =~ "Update HubSpot Contact"
+      refute html =~ "Update HubSpot"
     end
 
     test "redirects to meeting page when accessing hubspot route without credential", %{
