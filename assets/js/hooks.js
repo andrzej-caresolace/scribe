@@ -72,6 +72,18 @@ Hooks.InputAssistant = {
         // Button-triggered send via custom DOM event
         this.el.addEventListener("dispatch-question", () => this._dispatch())
 
+        // "Add context" inserts @ into textarea and triggers mention lookup
+        this.el.addEventListener("insert-at-symbol", () => {
+            const pos = this._input.selectionStart || this._input.value.length
+            const before = this._input.value.slice(0, pos)
+            const after = this._input.value.slice(pos)
+            this._input.value = before + "@" + after
+            this._input.selectionStart = pos + 1
+            this._input.selectionEnd = pos + 1
+            this._input.focus()
+            autoGrow()
+        })
+
         // When server pins a contact, splice name into textarea
         this.handleEvent("contact_pinned", ({ label }) => {
             const val = this._input.value

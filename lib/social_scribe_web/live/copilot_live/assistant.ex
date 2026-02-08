@@ -16,12 +16,12 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
   @impl true
   def mount(_params, _session, socket) do
     owner = socket.assigns.current_user
-    {provider, cred} = resolve_crm(owner.id)
+    crm_sources = resolve_crm_sources(owner.id)
 
     {:ok,
      socket
      |> assign(page_title: "CRM Copilot")
-     |> assign(crm_provider: provider, crm_cred: cred)
+     |> assign(crm_sources: crm_sources)
      |> assign(sessions: CrmCopilot.sessions_for_user(owner.id))
      |> assign(active_session: nil, turns: [])
      |> assign(pinned_contact: nil, mention_hits: [], mention_q: nil)
@@ -123,14 +123,14 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
 
   @impl true
   def handle_info({:run_mention_search, q}, socket) do
-    hits = do_mention_search(q, socket.assigns.crm_provider, socket.assigns.crm_cred)
+    hits = do_mention_search_all(q, socket.assigns.crm_sources)
     {:noreply, assign(socket, mention_hits: hits)}
   end
 
   def handle_info({:copilot_thinking, sess, human_turn, contact_snapshot}, socket) do
     ctx = %{
-      tagged_record: maybe_fetch_record(contact_snapshot, socket.assigns.crm_cred),
-      crm_type: socket.assigns.crm_provider,
+      tagged_record: maybe_fetch_record(contact_snapshot, socket.assigns.crm_sources),
+      crm_type: primary_provider(socket.assigns.crm_sources),
       prior_turns: socket.assigns.turns
     }
 
@@ -204,36 +204,50 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
      |> maybe_push_new_session_url(sess)}
   end
 
-  defp resolve_crm(uid) do
-    case Accounts.get_user_hubspot_credential(uid) do
-      nil ->
-        case Accounts.get_user_salesforce_credential(uid) do
-          nil -> {nil, nil}
-          c -> {:salesforce, c}
-        end
+  # Build a list of %{provider: atom, credential: struct} for every connected CRM.
+  defp resolve_crm_sources(uid) do
+    sources = []
 
-      c ->
-        {:hubspot, c}
+    sources =
+      case Accounts.get_user_hubspot_credential(uid) do
+        nil -> sources
+        c -> sources ++ [%{provider: :hubspot, credential: c}]
+      end
+
+    case Accounts.get_user_salesforce_credential(uid) do
+      nil -> sources
+      c -> sources ++ [%{provider: :salesforce, credential: c}]
     end
   end
 
-  defp do_mention_search(_q, nil, _cred), do: []
+  defp primary_provider([]), do: nil
+  defp primary_provider([%{provider: p} | _]), do: p
 
-  defp do_mention_search(q, :hubspot, cred) when not is_nil(cred) do
+  # Search ALL connected CRMs and merge results.
+  defp do_mention_search_all(_q, []), do: []
+
+  defp do_mention_search_all(q, sources) do
+    sources
+    |> Enum.flat_map(fn %{provider: prov, credential: cred} ->
+      search_single_crm(q, prov, cred)
+    end)
+  end
+
+  defp search_single_crm(q, :hubspot, cred) do
     case HubspotApiBehaviour.search_contacts(cred, q) do
       {:ok, list} -> normalize_contacts(list, "hubspot")
       _ -> []
     end
   end
 
-  defp do_mention_search(q, :salesforce, cred) when not is_nil(cred) do
+  defp search_single_crm(q, :salesforce, cred) do
     case SalesforceClientSpec.search_contacts(cred, q) do
       {:ok, list} -> normalize_contacts(list, "salesforce")
       _ -> []
     end
   end
 
-  defp do_mention_search(_q, _p, _c), do: []
+  defp search_single_crm(_q, _prov, _cred), do: []
 
   defp normalize_contacts(records, src) do
     records
@@ -243,23 +257,36 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
     )
   end
 
-  defp maybe_fetch_record(nil, _cred), do: nil
+  # Fetch the full record for a pinned contact, picking the right credential.
+  defp maybe_fetch_record(nil, _sources), do: nil
 
-  defp maybe_fetch_record(%{source: "hubspot", id: id}, cred) when not is_nil(cred) do
+  defp maybe_fetch_record(%{source: src, id: id}, sources) do
+    provider = String.to_existing_atom(src)
+
+    case Enum.find(sources, fn s -> s.provider == provider end) do
+      nil ->
+        nil
+
+      %{credential: cred} ->
+        fetch_from_crm(provider, cred, id)
+    end
+  end
+
+  defp fetch_from_crm(:hubspot, cred, id) do
     case HubspotApiBehaviour.get_contact(cred, id) do
       {:ok, rec} -> rec
       _ -> nil
     end
   end
 
-  defp maybe_fetch_record(%{source: "salesforce", id: id}, cred) when not is_nil(cred) do
+  defp fetch_from_crm(:salesforce, cred, id) do
     case SalesforceClientSpec.get_contact(cred, id) do
       {:ok, rec} -> rec
       _ -> nil
     end
   end
 
-  defp maybe_fetch_record(_c, _cred), do: nil
+  defp fetch_from_crm(_prov, _cred, _id), do: nil
 
   defp maybe_label_session(%{label: nil} = sess, first_question) do
     short = first_question |> String.slice(0..44)
@@ -290,4 +317,59 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
 
   def short_date(nil), do: ""
   def short_date(dt), do: Calendar.strftime(dt, "%b %d, %Y")
+
+  @doc false
+  attr :provider, :atom, required: true
+  attr :size, :atom, default: :sm
+
+  def crm_icon(%{provider: :hubspot} = assigns) do
+    size_class =
+      case assigns.size do
+        :xs -> "w-4 h-4 text-[8px]"
+        _ -> "w-5 h-5 text-[9px]"
+      end
+
+    assigns = assign(assigns, :size_class, size_class)
+
+    ~H"""
+    <span
+      class={"#{@size_class} rounded-full bg-[#FF7A59] flex items-center justify-center flex-shrink-0"}
+      title="HubSpot"
+    >
+      <span class="text-white font-bold leading-none">H</span>
+    </span>
+    """
+  end
+
+  def crm_icon(%{provider: :salesforce} = assigns) do
+    size_class =
+      case assigns.size do
+        :xs -> "w-4 h-4 text-[8px]"
+        _ -> "w-5 h-5 text-[9px]"
+      end
+
+    assigns = assign(assigns, :size_class, size_class)
+
+    ~H"""
+    <span
+      class={"#{@size_class} rounded-full bg-[#0176D3] flex items-center justify-center flex-shrink-0"}
+      title="Salesforce"
+    >
+      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="white">
+        <path d="M10 3.2c1-.8 2.2-1.2 3.5-1.2 1.8 0 3.4.9 4.4 2.2.8-.4 1.7-.6 2.6-.6C23 3.6 25 5.7 25 8.2c0 .3 0 .5-.1.8 1.3.8 2.1 2.2 2.1 3.8 0 2.5-2 4.5-4.5 4.5-.4 0-.8-.1-1.2-.2-.8 1.3-2.2 2.1-3.8 2.1-1 0-1.9-.3-2.7-.8-.7 1.5-2.3 2.6-4.1 2.6-1.8 0-3.4-1.1-4.1-2.6-.3.1-.7.1-1 .1-2.8 0-5-2.2-5-5 0-1.7.8-3.2 2.1-4.1 0-.3-.1-.6-.1-.9 0-2.5 2-4.5 4.5-4.5 1 0 1.9.3 2.4.9z" />
+      </svg>
+    </span>
+    """
+  end
+
+  def crm_icon(assigns) do
+    ~H"""
+    <span
+      class="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0"
+      title="Unknown"
+    >
+      <span class="text-white text-[9px] font-bold leading-none">?</span>
+    </span>
+    """
+  end
 end
