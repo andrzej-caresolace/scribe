@@ -79,6 +79,30 @@ defmodule SocialScribe.AccountsFixtures do
     credential
   end
 
+  @doc "Build a Salesforce credential for testing."
+  def make_salesforce_cred(overrides \\ %{}) do
+    owner = overrides[:user_id] || user_fixture().id
+    seq = System.unique_integer([:positive])
+
+    defaults = %{
+      user_id: owner,
+      provider: "salesforce",
+      token: "sfc_tok_#{seq}",
+      refresh_token: "sfc_ref_#{seq}",
+      uid: "sfc_uid_#{seq}",
+      email: "sf-test-#{seq}@example.org",
+      instance_url: "https://test.salesforce.com",
+      expires_at: DateTime.utc_now() |> DateTime.add(1, :hour)
+    }
+
+    {:ok, cred} =
+      defaults
+      |> Map.merge(overrides)
+      |> SocialScribe.Accounts.create_user_credential()
+
+    cred
+  end
+
   @doc """
   Generate a facebook_page_credential.
   """
