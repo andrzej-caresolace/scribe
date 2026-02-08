@@ -161,6 +161,54 @@ defmodule SocialScribe.AIContentGenerator do
     end
   end
 
+  @impl SocialScribe.AIContentGeneratorApi
+  def compose_copilot_reply(question, ctx) do
+    crm_label = ctx[:crm_type] || "your CRM"
+    contact_block = render_contact_block(ctx[:tagged_record])
+    dialogue_block = render_dialogue_block(Map.get(ctx, :prior_turns, []))
+
+    instructions = """
+    You are an intelligent CRM copilot. The user has asked a question.
+    Use the provided #{crm_label} contact record (if any) and prior dialogue to give a precise, helpful answer.
+    When the data is insufficient, state that clearly rather than guessing.
+
+    #{contact_block}
+
+    #{dialogue_block}
+
+    Question: #{question}
+    """
+
+    call_gemini(instructions)
+  end
+
+  defp render_contact_block(nil), do: "No contact record tagged."
+
+  defp render_contact_block(record) when is_map(record) do
+    lines =
+      record
+      |> Enum.reject(fn {_key, val} -> is_nil(val) or val == "" end)
+      |> Enum.map(fn {key, val} -> "  - #{key}: #{val}" end)
+      |> Enum.join("\n")
+
+    "Tagged contact record:\n#{lines}"
+  end
+
+  defp render_dialogue_block([]), do: "No prior dialogue."
+
+  defp render_dialogue_block(turns) when is_list(turns) do
+    recent =
+      turns
+      |> Enum.take(-8)
+      |> Enum.map(fn t ->
+        speaker = if t.sender == "human", do: "Human", else: "Copilot"
+        "#{speaker}: #{t.body}"
+      end)
+      |> Enum.join("\n")
+
+    "Prior dialogue:\n#{recent}"
+  end
+
   defp parse_crm_suggestions(response) do
     # Clean up the response - remove markdown code blocks if present
     cleaned =
