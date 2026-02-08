@@ -65,8 +65,28 @@ jobs:
           DATABASE_URL: ecto://postgres:postgres@localhost:5432/social_scribe_test
         run: mix ecto.setup
 
-      - name: Run test suite
+      - name: Run test suite with coverage
         env:
           DATABASE_URL: ecto://postgres:postgres@localhost:5432/social_scribe_test
-        run: mix test --trace
+        run: mix test --trace --cover
+
+      - name: Verify coverage threshold
+        env:
+          DATABASE_URL: ecto://postgres:postgres@localhost:5432/social_scribe_test
+        run: |
+          # Run coverage and capture output
+          OUTPUT=$(mix test --cover 2>&1)
+          echo "$OUTPUT"
+
+          # Extract total coverage percentage
+          TOTAL=$(echo "$OUTPUT" | grep '| Total' | grep -oP '[\d.]+(?=%)')
+          echo "Total coverage: ${TOTAL}%"
+
+          # Fail if below threshold (55%)
+          THRESHOLD=55
+          if [ "$(echo "$TOTAL < $THRESHOLD" | bc -l)" -eq 1 ]; then
+            echo "::error::Coverage ${TOTAL}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
+          echo "✅ Coverage ${TOTAL}% meets threshold ${THRESHOLD}%"
 
