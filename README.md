@@ -37,23 +37,23 @@ Social Scribe is a powerful Elixir and Phoenix LiveView application designed to 
 
 ## App Flow
 
-* **Login With Google and Meetins Sync:**
-    ![Auth Flow](https://youtu.be/RM7YSlu5ZDg)
+* **Login With Google and Meetings Sync:**
+    [![Auth Flow](https://img.youtube.com/vi/RM7YSlu5ZDg/hqdefault.jpg)](https://youtu.be/RM7YSlu5ZDg)
 
 * **Creating Automations:**
-    ![Creating Automations](https://youtu.be/V2tIKgUQYEw)
+    [![Creating Automations](https://img.youtube.com/vi/V2tIKgUQYEw/hqdefault.jpg)](https://youtu.be/V2tIKgUQYEw)
 
 * **Meetings Recordings:**
-    ![Meetings Recording](https://youtu.be/pZrLsoCfUeA)
+    [![Meetings Recording](https://img.youtube.com/vi/pZrLsoCfUeA/hqdefault.jpg)](https://youtu.be/pZrLsoCfUeA)
 
 * **Facebook Login:**
-    ![Facebook Login](https://youtu.be/JRhPqCN-jeI)
+    [![Facebook Login](https://img.youtube.com/vi/JRhPqCN-jeI/hqdefault.jpg)](https://youtu.be/JRhPqCN-jeI)
 
 * **Facebook Post:**
-    ![Facebook Post](https://youtu.be/4w6zpz0Rn2o)
+    [![Facebook Post](https://img.youtube.com/vi/4w6zpz0Rn2o/hqdefault.jpg)](https://youtu.be/4w6zpz0Rn2o)
 
 * **LinkedIn Login & Post:**
-    ![LinkedIn Login and Post](https://youtu.be/wuD_zefGy2k)
+    [![LinkedIn Login and Post](https://img.youtube.com/vi/wuD_zefGy2k/hqdefault.jpg)](https://youtu.be/wuD_zefGy2k)
 ---
 
 ## 📸 Screenshots & GIFs
