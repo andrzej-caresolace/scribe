@@ -16,7 +16,7 @@ defmodule SocialScribe.SalesforceTokenRefresher do
   @doc """
   Refreshes a Salesforce access token using the refresh token.
   Returns {:ok, response_body} with new access_token and instance_url.
-  
+
   Note: Salesforce doesn't return a new refresh_token on refresh,
   and doesn't return expires_in - tokens are valid until revoked.
   """
@@ -84,4 +84,3 @@ defmodule SocialScribe.SalesforceTokenRefresher do
     end
   end
 end
-

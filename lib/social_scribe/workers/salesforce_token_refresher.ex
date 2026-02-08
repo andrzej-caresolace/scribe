@@ -28,7 +28,10 @@ defmodule SocialScribe.Workers.SalesforceTokenRefresher do
         :ok
 
       credentials ->
-        Logger.info("Found #{length(credentials)} Salesforce token(s) expiring soon, refreshing...")
+        Logger.info(
+          "Found #{length(credentials)} Salesforce token(s) expiring soon, refreshing..."
+        )
+
         refresh_all(credentials)
     end
   end
@@ -72,4 +75,3 @@ defmodule SocialScribe.Workers.SalesforceTokenRefresher do
     end
   end
 end
-

@@ -137,4 +137,3 @@ defmodule Ueberauth.Strategy.Salesforce do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
   end
 end
-

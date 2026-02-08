@@ -11,7 +11,9 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
     ~H"""
     <div class="space-y-6">
       <div>
-        <h2 id={"#{@modal_id}-title"} class="text-xl font-medium tracking-tight text-slate-900">Update in Salesforce</h2>
+        <h2 id={"#{@modal_id}-title"} class="text-xl font-medium tracking-tight text-slate-900">
+          Update in Salesforce
+        </h2>
         <p id={"#{@modal_id}-description"} class="mt-2 text-base font-light leading-7 text-slate-500">
           Here are suggested updates to sync with your integrations based on this
           <span class="block">meeting</span>
@@ -19,14 +21,14 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
       </div>
 
       <.salesforce_contact_select
-          selected_contact={@selected_contact}
-          contacts={@contacts}
-          loading={@searching}
-          open={@dropdown_open}
-          query={@query}
-          target={@myself}
-          error={@error}
-        />
+        selected_contact={@selected_contact}
+        contacts={@contacts}
+        loading={@searching}
+        open={@dropdown_open}
+        query={@query}
+        target={@myself}
+        error={@error}
+      />
 
       <%= if @selected_contact do %>
         <.suggestions_section
@@ -52,7 +54,9 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
   defp salesforce_contact_select(assigns) do
     ~H"""
     <div class="space-y-1">
-      <label for={"#{@id}-input"} class="block text-sm font-medium text-slate-700">Select Contact</label>
+      <label for={"#{@id}-input"} class="block text-sm font-medium text-slate-700">
+        Select Contact
+      </label>
       <div class="relative">
         <%= if @selected_contact do %>
           <button
@@ -66,7 +70,11 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
             class="relative w-full bg-white border border-slate-300 rounded-lg pl-1.5 pr-10 py-[5px] text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00A1E0] focus:border-[#00A1E0] text-sm"
           >
             <span class="flex items-center">
-              <.salesforce_avatar firstname={@selected_contact.firstname} lastname={@selected_contact.lastname} size={:sm} />
+              <.salesforce_avatar
+                firstname={@selected_contact.firstname}
+                lastname={@selected_contact.lastname}
+                size={:sm}
+              />
               <span class="ml-1.5 block truncate text-slate-900">
                 {@selected_contact.firstname} {@selected_contact.lastname}
               </span>
@@ -118,7 +126,7 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
             phx-click="clear_contact"
             phx-target={@target}
             role="option"
-            aria-selected={"false"}
+            aria-selected="false"
             class="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm text-slate-700 cursor-pointer"
           >
             Clear selection
@@ -126,7 +134,10 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
           <div :if={@loading} class="px-4 py-2 text-sm text-gray-500">
             Searching...
           </div>
-          <div :if={!@loading && Enum.empty?(@contacts) && @query != ""} class="px-4 py-2 text-sm text-gray-500">
+          <div
+            :if={!@loading && Enum.empty?(@contacts) && @query != ""}
+            class="px-4 py-2 text-sm text-gray-500"
+          >
             No contacts found
           </div>
           <button
@@ -136,7 +147,7 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
             phx-value-id={contact.id}
             phx-target={@target}
             role="option"
-            aria-selected={"false"}
+            aria-selected="false"
             class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center space-x-3 cursor-pointer"
           >
             <.salesforce_avatar firstname={contact.firstname} lastname={contact.lastname} size={:sm} />
@@ -236,7 +247,9 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
             <input
               type="checkbox"
               checked={@suggestion.apply}
-              phx-click={Phoenix.LiveView.JS.dispatch("click", to: "#sf-suggestion-apply-#{@suggestion.field}")}
+              phx-click={
+                Phoenix.LiveView.JS.dispatch("click", to: "#sf-suggestion-apply-#{@suggestion.field}")
+              }
               class="h-4 w-4 rounded-[3px] border-slate-300 text-[#00A1E0] accent-[#00A1E0] focus:ring-0 focus:ring-offset-0 cursor-pointer"
             />
           </div>
@@ -280,7 +293,10 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
               placeholder="No existing value"
               class={[
                 "block w-full shadow-sm text-sm bg-white border border-gray-300 rounded-[7px] py-1.5 px-2",
-                if(@suggestion.current_value && @suggestion.current_value != "", do: "line-through text-gray-500", else: "text-gray-400")
+                if(@suggestion.current_value && @suggestion.current_value != "",
+                  do: "line-through text-gray-500",
+                  else: "text-gray-400"
+                )
               ]}
             />
 
@@ -298,16 +314,21 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
         </div>
 
         <div class="mt-3 grid grid-cols-[1fr_32px_1fr] items-start gap-6">
-          <button type="button" class="text-xs text-[#00A1E0] hover:text-[#008CBE] font-medium justify-self-start">
+          <button
+            type="button"
+            class="text-xs text-[#00A1E0] hover:text-[#008CBE] font-medium justify-self-start"
+          >
             Update mapping
           </button>
           <span></span>
-          <span :if={@suggestion[:timestamp]} class="text-xs text-slate-500 justify-self-start">Found in transcript<span
+          <span :if={@suggestion[:timestamp]} class="text-xs text-slate-500 justify-self-start">
+            Found in transcript<span
               class="text-[#00A1E0] hover:underline cursor-help"
               title={@suggestion[:context]}
             >
               ({@suggestion[:timestamp]})
-            </span></span>
+            </span>
+          </span>
         </div>
       </div>
     </div>
@@ -333,7 +354,8 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
     {:ok, socket}
   end
 
-  defp maybe_select_all_suggestions(socket, %{suggestions: suggestions}) when is_list(suggestions) do
+  defp maybe_select_all_suggestions(socket, %{suggestions: suggestions})
+       when is_list(suggestions) do
     assign(socket, suggestions: Enum.map(suggestions, &Map.put(&1, :apply, true)))
   end
 
@@ -369,7 +391,10 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
     else
       # When opening dropdown with selected contact, search for similar contacts
       socket = assign(socket, dropdown_open: true, searching: true)
-      query = "#{socket.assigns.selected_contact.firstname} #{socket.assigns.selected_contact.lastname}"
+
+      query =
+        "#{socket.assigns.selected_contact.firstname} #{socket.assigns.selected_contact.lastname}"
+
       send(self(), {:salesforce_search, query, socket.assigns.credential})
       {:noreply, socket}
     end
@@ -380,15 +405,22 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
     contact = Enum.find(socket.assigns.contacts, &(&1.id == contact_id))
 
     if contact do
-      socket = assign(socket,
-        loading: true,
-        selected_contact: contact,
-        error: nil,
-        dropdown_open: false,
-        query: "",
-        suggestions: []
+      socket =
+        assign(socket,
+          loading: true,
+          selected_contact: contact,
+          error: nil,
+          dropdown_open: false,
+          query: "",
+          suggestions: []
+        )
+
+      send(
+        self(),
+        {:generate_salesforce_suggestions, contact, socket.assigns.meeting,
+         socket.assigns.credential}
       )
-      send(self(), {:generate_salesforce_suggestions, contact, socket.assigns.meeting, socket.assigns.credential})
+
       {:noreply, socket}
     else
       {:noreply, assign(socket, error: "Contact not found")}
@@ -444,7 +476,12 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
         Map.put(acc, field, Map.get(values, field, ""))
       end)
 
-    send(self(), {:apply_salesforce_updates, updates, socket.assigns.selected_contact, socket.assigns.credential})
+    send(
+      self(),
+      {:apply_salesforce_updates, updates, socket.assigns.selected_contact,
+       socket.assigns.credential}
+    )
+
     {:noreply, socket}
   end
 
@@ -453,4 +490,3 @@ defmodule SocialScribeWeb.MeetingLive.SalesforceModalComponent do
     {:noreply, assign(socket, error: "Please select at least one field to update")}
   end
 end
-

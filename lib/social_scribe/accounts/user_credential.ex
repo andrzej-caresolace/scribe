@@ -20,7 +20,16 @@ defmodule SocialScribe.Accounts.UserCredential do
   @doc false
   def changeset(user_credential, attrs) do
     user_credential
-    |> cast(attrs, [:provider, :uid, :token, :refresh_token, :expires_at, :user_id, :email, :instance_url])
+    |> cast(attrs, [
+      :provider,
+      :uid,
+      :token,
+      :refresh_token,
+      :expires_at,
+      :user_id,
+      :email,
+      :instance_url
+    ])
     |> validate_required([:provider, :uid, :token, :expires_at, :user_id, :email])
   end
 
@@ -36,7 +45,25 @@ defmodule SocialScribe.Accounts.UserCredential do
   """
   def salesforce_changeset(user_credential, attrs) do
     user_credential
-    |> cast(attrs, [:provider, :uid, :token, :refresh_token, :expires_at, :user_id, :email, :instance_url])
-    |> validate_required([:provider, :uid, :token, :refresh_token, :expires_at, :user_id, :email, :instance_url])
+    |> cast(attrs, [
+      :provider,
+      :uid,
+      :token,
+      :refresh_token,
+      :expires_at,
+      :user_id,
+      :email,
+      :instance_url
+    ])
+    |> validate_required([
+      :provider,
+      :uid,
+      :token,
+      :refresh_token,
+      :expires_at,
+      :user_id,
+      :email,
+      :instance_url
+    ])
   end
 end

@@ -147,4 +147,3 @@ defmodule Ueberauth.Strategy.Salesforce.OAuth do
     |> OAuth2.Strategy.AuthCode.get_token(params, headers)
   end
 end
-

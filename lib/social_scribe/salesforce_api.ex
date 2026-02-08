@@ -52,7 +52,7 @@ defmodule SocialScribe.SalesforceApi do
       # Use SOQL with LIKE for searching
       # Escape single quotes in query
       safe_query = String.replace(query, "'", "\\'")
-      
+
       soql = """
       SELECT #{Enum.join(@contact_fields, ", ")}
       FROM Contact
@@ -109,7 +109,7 @@ defmodule SocialScribe.SalesforceApi do
   Updates a contact's fields.
   `updates` should be a map of field names to new values.
   Automatically refreshes token on 401/expired errors and retries once.
-  
+
   Note: Salesforce field names are case-sensitive (e.g., "FirstName", not "firstname")
   """
   def update_contact(%UserCredential{} = credential, contact_id, updates)
@@ -138,7 +138,7 @@ defmodule SocialScribe.SalesforceApi do
   @doc """
   Batch updates multiple fields on a contact.
   This is a convenience wrapper around update_contact/3.
-  
+
   `updates_list` should be a list of maps with :field, :new_value, and :apply keys.
   Only updates where :apply is true will be applied.
   """
@@ -167,7 +167,7 @@ defmodule SocialScribe.SalesforceApi do
   def search_contacts_by_email(%UserCredential{} = credential, email) when is_binary(email) do
     with_token_refresh(credential, fn cred ->
       safe_email = String.replace(email, "'", "\\'")
-      
+
       soql = """
       SELECT #{Enum.join(@contact_fields, ", ")}
       FROM Contact
@@ -196,7 +196,7 @@ defmodule SocialScribe.SalesforceApi do
   # Matches the format used by HubSpot API for consistency
   defp format_contact(%{"Id" => id} = contact) do
     account_name = get_in(contact, ["Account", "Name"])
-    
+
     %{
       id: id,
       firstname: contact["FirstName"],
@@ -309,7 +309,7 @@ defmodule SocialScribe.SalesforceApi do
     Enum.any?(errors, fn error ->
       error_code = error["errorCode"] || ""
       message = error["message"] || ""
-      
+
       error_code in ["INVALID_SESSION_ID", "INVALID_AUTH_HEADER"] ||
         String.contains?(String.downcase(message), ["session", "expired", "invalid"])
     end)
@@ -317,4 +317,3 @@ defmodule SocialScribe.SalesforceApi do
 
   defp is_token_error?(_), do: false
 end
-
