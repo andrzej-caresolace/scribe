@@ -1,0 +1,245 @@
+<div class="flex h-[calc(100vh-100px)] max-w-4xl mx-auto bg-white rounded-xl shadow-sm overflow-hidden">
+  <%!-- Left pane: session list (always visible on md+, toggled on mobile) --%>
+  <aside class={[
+    "w-64 border-r border-gray-100 flex-shrink-0 flex flex-col",
+    @panel == :sessions && "block",
+    @panel != :sessions && "hidden md:flex"
+  ]}>
+    <div class="px-4 pt-5 pb-3 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Sessions</h2>
+      <button
+        phx-click="begin_session"
+        class="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+        title="New session"
+      >
+        <.icon name="hero-plus-circle" class="size-5" />
+      </button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-2 space-y-0.5">
+      <%= if @sessions == [] do %>
+        <p class="px-3 py-6 text-center text-xs text-gray-400">No sessions yet</p>
+      <% else %>
+        <%= for s <- @sessions do %>
+          <div class="group flex items-center rounded-lg hover:bg-gray-50 transition-colors">
+            <button
+              phx-click="open_session"
+              phx-value-sid={s.id}
+              class={[
+                "flex-1 text-left px-3 py-2.5 rounded-lg truncate text-sm",
+                @active_session && @active_session.id == s.id &&
+                  "bg-indigo-50 text-indigo-700 font-medium",
+                !(@active_session && @active_session.id == s.id) && "text-gray-700"
+              ]}
+            >
+              <span class="block truncate">{s.label || "Untitled"}</span>
+              <span class="text-xs text-gray-400">{short_date(s.updated_at)}</span>
+            </button>
+            <button
+              phx-click="remove_session"
+              phx-value-sid={s.id}
+              class="hidden group-hover:inline-flex p-1 mr-1 text-gray-400 hover:text-red-500 rounded transition-colors"
+              title="Delete"
+            >
+              <.icon name="hero-x-mark" class="size-3.5" />
+            </button>
+          </div>
+        <% end %>
+      <% end %>
+    </nav>
+  </aside>
+
+  <%!-- Right pane: active dialogue --%>
+  <section class="flex-1 flex flex-col min-w-0">
+    <%!-- Top bar --%>
+    <div class="px-5 pt-4 pb-2 border-b border-gray-100 flex items-center gap-3">
+      <button
+        phx-click="show_panel"
+        phx-value-which="sessions"
+        class="md:hidden p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"
+      >
+        <.icon name="hero-bars-3" class="size-5" />
+      </button>
+      <h1 class="text-lg font-semibold text-gray-900">CRM Copilot</h1>
+      <button
+        phx-click="show_panel"
+        phx-value-which="dialogue"
+        class="md:hidden ml-auto p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"
+      >
+        <.icon name="hero-chat-bubble-left-ellipsis" class="size-5" />
+      </button>
+    </div>
+
+    <%!-- Turn list --%>
+    <div
+      id="turn-scroll"
+      phx-hook="AutoScroller"
+      class="flex-1 overflow-y-auto px-5 py-4 space-y-3"
+    >
+      <%= if @turns == [] do %>
+        <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
+          <.icon name="hero-sparkles" class="size-10" />
+          <p class="text-sm text-center max-w-xs">
+            Ask anything about your CRM contacts. Use
+            <span class="font-mono bg-gray-100 px-1 rounded text-xs">@name</span>
+            to tag a contact.
+          </p>
+          <%= if is_nil(@crm_provider) do %>
+            <p class="text-xs text-amber-500 mt-1">
+              Connect HubSpot or Salesforce in Settings first.
+            </p>
+          <% else %>
+            <p class="text-xs mt-1">
+              Connected: <span class="capitalize font-medium">{@crm_provider}</span>
+            </p>
+          <% end %>
+        </div>
+      <% else %>
+        <%!-- Separator --%>
+        <div class="flex items-center gap-2 text-xs text-gray-400 mb-1">
+          <span class="flex-1 border-t border-gray-100"></span>
+          <span>{ts_label(List.first(@turns))}</span>
+          <span class="flex-1 border-t border-gray-100"></span>
+        </div>
+
+        <%= for turn <- @turns do %>
+          <%= if turn.sender == "human" do %>
+            <div class="flex justify-end">
+              <div class="max-w-[75%] bg-indigo-600 text-white rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
+                <p class="text-sm whitespace-pre-wrap">{turn.body}</p>
+              </div>
+            </div>
+          <% else %>
+            <div class="flex justify-start gap-2">
+              <span class="mt-1 flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                <.icon name="hero-sparkles" class="size-3.5 text-indigo-600" />
+              </span>
+              <div class="max-w-[80%]">
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">{turn.body}</p>
+                <%= if turn.extras["sources"] do %>
+                  <div class="flex items-center gap-1.5 mt-1.5">
+                    <span class="text-[11px] text-gray-400">via</span>
+                    <%= for src <- turn.extras["sources"] do %>
+                      <span class={[
+                        "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium",
+                        src["crm"] == "hubspot" && "bg-orange-50 text-orange-700",
+                        src["crm"] == "salesforce" && "bg-sky-50 text-sky-700"
+                      ]}>
+                        {src["name"]}
+                      </span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+
+        <%!-- Typing dots --%>
+        <%= if @thinking do %>
+          <div class="flex justify-start gap-2">
+            <span class="mt-1 flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+              <.icon name="hero-sparkles" class="size-3.5 text-indigo-600" />
+            </span>
+            <div class="flex items-center gap-1 px-3 py-2">
+              <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]">
+              </span>
+              <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]">
+              </span>
+              <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]">
+              </span>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <%!-- Composer --%>
+    <footer class="border-t border-gray-100 px-5 py-3">
+      <%!-- Pinned contact badge --%>
+      <%= if @pinned_contact do %>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-[11px] text-gray-500">Asking about:</span>
+          <span class={[
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+            @pinned_contact.source == "hubspot" && "bg-orange-50 text-orange-700",
+            @pinned_contact.source == "salesforce" && "bg-sky-50 text-sky-700"
+          ]}>
+            {@pinned_contact.label}
+          </span>
+        </div>
+      <% end %>
+
+      <div id="composer" phx-hook="InputAssistant" class="relative">
+        <%!-- Mention popup --%>
+        <%= if @mention_hits != [] do %>
+          <div class="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-44 overflow-y-auto z-20">
+            <%= for hit <- @mention_hits do %>
+              <button
+                phx-click="pin_contact"
+                phx-value-cid={hit.id}
+                phx-value-label={hit.label}
+                phx-value-src={hit.source}
+                class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 text-left transition-colors"
+              >
+                <span class={[
+                  "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white",
+                  hit.source == "hubspot" && "bg-orange-500",
+                  hit.source == "salesforce" && "bg-sky-500"
+                ]}>
+                  {String.first(hit.label)}
+                </span>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">{hit.label}</p>
+                  <p class="text-[11px] text-gray-400 capitalize">{hit.source}</p>
+                </div>
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%!-- Input row --%>
+        <div class="flex items-end gap-2 bg-gray-50 rounded-xl px-4 py-2.5">
+          <textarea
+            id="copilot-input"
+            rows="1"
+            placeholder="Ask anything about your contacts…"
+            class="flex-1 bg-transparent border-none outline-none resize-none text-sm text-gray-700 placeholder-gray-400 p-0 focus:ring-0"
+            phx-update="ignore"
+          ></textarea>
+          <button
+            type="button"
+            phx-click={JS.dispatch("dispatch-question", to: "#composer")}
+            class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex-shrink-0"
+          >
+            <.icon name="hero-paper-airplane" class="size-5" />
+          </button>
+        </div>
+
+        <%!-- Source badge --%>
+        <div class="flex items-center gap-1.5 mt-1.5 px-1">
+          <span class="text-[11px] text-gray-400">Source:</span>
+          <%= if @crm_provider == :hubspot do %>
+            <span
+              class="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center"
+              title="HubSpot"
+            >
+              <span class="text-white text-[9px] font-bold">H</span>
+            </span>
+          <% end %>
+          <%= if @crm_provider == :salesforce do %>
+            <span
+              class="w-4 h-4 rounded-full bg-sky-500 flex items-center justify-center"
+              title="Salesforce"
+            >
+              <span class="text-white text-[9px] font-bold">S</span>
+            </span>
+          <% end %>
+          <%= if is_nil(@crm_provider) do %>
+            <span class="text-[11px] text-gray-400 italic">none connected</span>
+          <% end %>
+        </div>
+      </div>
+    </footer>
+  </section>
+</div>

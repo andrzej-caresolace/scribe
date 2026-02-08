@@ -85,6 +85,9 @@ defmodule SocialScribeWeb.Router do
       live "/meetings/:id/hubspot", MeetingLive.Show, :hubspot
       live "/meetings/:id/salesforce", MeetingLive.Show, :salesforce
 
+      live "/copilot", CopilotLive.Assistant, :index
+      live "/copilot/:session_id", CopilotLive.Assistant, :show
+
       live "/automations", AutomationLive.Index, :index
       live "/automations/new", AutomationLive.Index, :new
       live "/automations/:id/edit", AutomationLive.Index, :edit
