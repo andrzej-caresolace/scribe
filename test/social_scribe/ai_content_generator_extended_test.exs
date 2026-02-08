@@ -2,6 +2,8 @@ defmodule SocialScribe.AIContentGeneratorExtendedTest do
   @moduledoc "Extended tests for AIContentGenerator covering more functions and code paths."
   use SocialScribe.DataCase, async: false
 
+  @moduletag capture_log: true
+
   import SocialScribe.AccountsFixtures
   import SocialScribe.MeetingsFixtures
 

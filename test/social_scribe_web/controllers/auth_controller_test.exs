@@ -2,6 +2,8 @@ defmodule SocialScribeWeb.AuthControllerTest do
   @moduledoc "Tests for OAuth callback handlers in AuthController."
   use SocialScribeWeb.ConnCase
 
+  @moduletag capture_log: true
+
   import SocialScribe.AccountsFixtures
 
   describe "callback/2 - generic fallback (no ueberauth_auth)" do

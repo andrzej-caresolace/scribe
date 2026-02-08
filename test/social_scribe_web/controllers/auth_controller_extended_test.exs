@@ -2,6 +2,8 @@ defmodule SocialScribeWeb.AuthControllerExtendedTest do
   @moduledoc "Extended tests for AuthController covering LinkedIn and failure paths."
   use SocialScribeWeb.ConnCase
 
+  @moduletag capture_log: true
+
   import SocialScribe.AccountsFixtures
 
   describe "callback/2 - LinkedIn provider" do

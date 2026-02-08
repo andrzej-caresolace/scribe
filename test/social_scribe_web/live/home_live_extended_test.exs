@@ -7,6 +7,9 @@ defmodule SocialScribeWeb.HomeLiveExtendedTest do
   import SocialScribe.CalendarFixtures
   import Mox
 
+  # Suppress expected Postgrex/Logger noise from async calendar sync
+  @moduletag capture_log: true
+
   setup :verify_on_exit!
 
   describe "HomeLive - toggle_record event" do
@@ -39,6 +42,8 @@ defmodule SocialScribeWeb.HomeLiveExtendedTest do
 
     test "toggles recording on an event", %{conn: conn, event: event} do
       {:ok, view, _html} = live(conn, ~p"/dashboard")
+      # Wait for async :sync_calendars to finish before proceeding
+      _ = render(view)
 
       # Check if the toggle button exists
       if has_element?(view, "[phx-click='toggle_record'][phx-value-id='#{event.id}']") do
@@ -69,13 +74,16 @@ defmodule SocialScribeWeb.HomeLiveExtendedTest do
     end
 
     test "loading state transitions after mount", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/dashboard")
-      # After connected mount, sync_calendars runs and loading becomes false
+      {:ok, view, html} = live(conn, ~p"/dashboard")
+      # Wait for async :sync_calendars to finish
+      _ = render(view)
       assert html =~ "Upcoming Meetings"
     end
 
     test "renders page title", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/dashboard")
+      {:ok, view, html} = live(conn, ~p"/dashboard")
+      # Wait for async :sync_calendars to finish
+      _ = render(view)
       assert html =~ "Upcoming Meetings"
     end
   end
