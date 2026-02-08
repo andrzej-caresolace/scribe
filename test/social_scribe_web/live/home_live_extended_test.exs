@@ -14,9 +14,15 @@ defmodule SocialScribeWeb.HomeLiveExtendedTest do
       user = user_fixture()
       _google_cred = user_credential_fixture(%{user_id: user.id, provider: "google"})
 
-      # Stub calendar sync
+      # Stub token refresher (credential may be expired)
+      SocialScribe.TokenRefresherMock
+      |> stub(:refresh_token, fn _token ->
+        {:ok, %{"access_token" => "refreshed", "expires_in" => 3600}}
+      end)
+
+      # Stub calendar sync — must match the pattern {:ok, %{"items" => items}}
       SocialScribe.GoogleCalendarApiMock
-      |> stub(:list_events, fn _token, _start, _end, _cal_id -> {:ok, []} end)
+      |> stub(:list_events, fn _token, _start, _end, _cal_id -> {:ok, %{"items" => []}} end)
 
       # Stub bot creation (create_bot/2 takes meeting_url and join_at)
       SocialScribe.RecallApiMock
@@ -51,8 +57,13 @@ defmodule SocialScribeWeb.HomeLiveExtendedTest do
       user = user_fixture()
       _google_cred = user_credential_fixture(%{user_id: user.id, provider: "google"})
 
+      SocialScribe.TokenRefresherMock
+      |> stub(:refresh_token, fn _token ->
+        {:ok, %{"access_token" => "refreshed", "expires_in" => 3600}}
+      end)
+
       SocialScribe.GoogleCalendarApiMock
-      |> stub(:list_events, fn _token, _start, _end, _cal_id -> {:ok, []} end)
+      |> stub(:list_events, fn _token, _start, _end, _cal_id -> {:ok, %{"items" => []}} end)
 
       %{conn: log_in_user(conn, user), user: user}
     end

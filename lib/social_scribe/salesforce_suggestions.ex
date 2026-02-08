@@ -5,7 +5,7 @@ defmodule SocialScribe.SalesforceSuggestions do
   """
 
   alias SocialScribe.AIContentGeneratorApi
-  alias SocialScribe.SalesforceApi
+  alias SocialScribe.SalesforceClientSpec
   alias SocialScribe.Accounts.UserCredential
 
   @field_labels %{
@@ -36,7 +36,7 @@ defmodule SocialScribe.SalesforceSuggestions do
   - apply: boolean indicating whether to apply this update (default true)
   """
   def generate_suggestions(%UserCredential{} = credential, contact_id, meeting) do
-    with {:ok, contact} <- SalesforceApi.get_contact(credential, contact_id),
+    with {:ok, contact} <- SalesforceClientSpec.get_contact(credential, contact_id),
          {:ok, ai_suggestions} <- AIContentGeneratorApi.generate_salesforce_suggestions(meeting) do
       suggestions =
         ai_suggestions

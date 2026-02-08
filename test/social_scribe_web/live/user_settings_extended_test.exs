@@ -18,7 +18,7 @@ defmodule SocialScribeWeb.UserSettingsExtendedTest do
 
     test "shows Google connect button", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/dashboard/settings")
-      assert has_element?(view, "a", "Connect Google")
+      assert has_element?(view, "a", "Connect another Google Account")
     end
 
     test "validates bot preference form with join_minute_offset", %{conn: conn} do

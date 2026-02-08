@@ -1,12 +1,21 @@
 defmodule SocialScribe.AIContentGeneratorExtendedTest do
   @moduledoc "Extended tests for AIContentGenerator covering more functions and code paths."
-  use SocialScribe.DataCase, async: true
+  use SocialScribe.DataCase, async: false
 
   import SocialScribe.AccountsFixtures
   import SocialScribe.MeetingsFixtures
 
   alias SocialScribe.AIContentGenerator
   alias SocialScribe.Meetings
+
+  # Temporarily clear the Gemini API key so the real implementation returns {:error, {:config_error, _}}
+  # instead of hitting the actual API.
+  setup do
+    original = Application.get_env(:social_scribe, :gemini_api_key)
+    Application.put_env(:social_scribe, :gemini_api_key, nil)
+    on_exit(fn -> Application.put_env(:social_scribe, :gemini_api_key, original) end)
+    :ok
+  end
 
   defp build_meeting_with_transcript do
     user = user_fixture()
