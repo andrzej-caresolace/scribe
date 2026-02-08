@@ -197,14 +197,16 @@
                     <p class="text-sm font-medium text-gray-800">No CRM connected</p>
                     <p class="text-xs text-gray-500 mt-0.5">
                       Go to
-                      <.link navigate={~p"/dashboard/settings"} class="text-indigo-600 hover:underline font-medium">
+                      <.link
+                        navigate={~p"/dashboard/settings"}
+                        class="text-indigo-600 hover:underline font-medium"
+                      >
                         Settings
                       </.link>
                       to connect HubSpot or Salesforce.
                     </p>
                   </div>
                 </div>
-
               <% @mention_searching -> %>
                 <%!-- Loading --%>
                 <div class="px-4 py-4 flex items-center gap-3 text-sm text-gray-400">
@@ -212,21 +214,18 @@
                   </span>
                   Searching contacts…
                 </div>
-
               <% byte_size(@mention_q) < 2 -> %>
                 <%!-- Hint: type more --%>
                 <div class="px-4 py-4 text-sm text-gray-400">
                   Type <span class="font-mono bg-gray-100 text-gray-600 px-1 rounded">@name</span>
                   to search and tag a contact
                 </div>
-
               <% @mention_hits == [] -> %>
                 <%!-- No results --%>
                 <div class="px-4 py-4 text-sm text-gray-400">
                   No contacts found for
                   "<span class="font-medium text-gray-600">{@mention_q}</span>"
                 </div>
-
               <% true -> %>
                 <%!-- Results --%>
                 <%= for hit <- @mention_hits do %>
@@ -305,7 +304,11 @@
               stroke-width="2.5"
               stroke="currentColor"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
+              />
             </svg>
           </button>
         </div>
