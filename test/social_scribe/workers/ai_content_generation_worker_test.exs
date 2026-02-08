@@ -1,6 +1,9 @@
 defmodule SocialScribe.Workers.AIContentGenerationWorkerTest do
   use SocialScribe.DataCase, async: true
 
+  # Suppress expected [error] logs from error-path tests
+  @moduletag capture_log: true
+
   import Mox
   import SocialScribe.MeetingsFixtures
   import SocialScribe.MeetingTranscriptExample

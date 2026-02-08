@@ -1,0 +1,92 @@
+name: Elixir Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  MIX_ENV: test
+  ELIXIR_VER: "1.17"
+  OTP_VER: "26"
+
+jobs:
+  quality:
+    name: Code quality & tests
+    runs-on: ubuntu-22.04
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: social_scribe_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir & Erlang
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VER }}
+          otp-version: ${{ env.OTP_VER }}
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ runner.os }}-${{ env.ELIXIR_VER }}-${{ hashFiles('mix.lock') }}
+          restore-keys: mix-${{ runner.os }}-${{ env.ELIXIR_VER }}-
+
+      - name: Fetch & compile deps
+        run: |
+          mix deps.get
+          mix deps.compile
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Compile (warnings as errors)
+        run: mix compile --warnings-as-errors
+
+      - name: Prepare database
+        env:
+          DATABASE_URL: ecto://postgres:postgres@localhost:5432/social_scribe_test
+        run: mix ecto.setup
+
+      - name: Run test suite with coverage
+        env:
+          DATABASE_URL: ecto://postgres:postgres@localhost:5432/social_scribe_test
+        run: mix test --trace --cover
+
+      - name: Verify coverage threshold
+        env:
+          DATABASE_URL: ecto://postgres:postgres@localhost:5432/social_scribe_test
+        run: |
+          # Run coverage and capture output
+          OUTPUT=$(mix test --cover 2>&1)
+          echo "$OUTPUT"
+
+          # Extract total coverage percentage
+          TOTAL=$(echo "$OUTPUT" | grep '| Total' | grep -oP '[\d.]+(?=%)')
+          echo "Total coverage: ${TOTAL}%"
+
+          # Fail if below threshold (55%)
+          THRESHOLD=55
+          if [ "$(echo "$TOTAL < $THRESHOLD" | bc -l)" -eq 1 ]; then
+            echo "::error::Coverage ${TOTAL}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
+          echo "✅ Coverage ${TOTAL}% meets threshold ${THRESHOLD}%"
+

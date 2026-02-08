@@ -9,7 +9,32 @@ defmodule SocialScribe.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      test_coverage: [
+        summary: [threshold: 55],
+        ignore_modules: [
+          # External API wrappers that require live credentials
+          SocialScribe.Facebook,
+          SocialScribe.FacebookApi,
+          SocialScribe.GoogleCalendar,
+          SocialScribe.LinkedIn,
+          SocialScribe.LinkedInApi,
+          SocialScribe.Poster,
+          SocialScribe.Recall,
+          SocialScribe.Release,
+          SocialScribe.TokenRefresher,
+          # OAuth strategies with external redirects
+          Ueberauth.Strategy.Hubspot,
+          Ueberauth.Strategy.Hubspot.OAuth,
+          Ueberauth.Strategy.Salesforce,
+          Ueberauth.Strategy.Salesforce.OAuth,
+          # UI components with no logic
+          SocialScribeWeb.ClipboardButton,
+          SocialScribeWeb.ClipboardButtonComponent,
+          SocialScribeWeb.LandingLive,
+          SocialScribeWeb.Layouts
+        ]
+      ]
     ]
   end
 

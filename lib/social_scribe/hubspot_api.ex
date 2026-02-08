@@ -141,6 +141,34 @@ defmodule SocialScribe.HubspotApi do
     end
   end
 
+  @doc """
+  Creates a new contact in HubSpot.
+  `properties` should be a map of property names to values.
+  Automatically refreshes token on 401/expired errors and retries once.
+  """
+  def create_contact(%UserCredential{} = credential, properties) when is_map(properties) do
+    with_token_refresh(credential, fn cred ->
+      body = %{properties: properties}
+
+      case Tesla.post(client(cred.token), "/crm/v3/objects/contacts", body) do
+        {:ok, %Tesla.Env{status: 201, body: body}} ->
+          {:ok, format_contact(body)}
+
+        {:ok, %Tesla.Env{status: 200, body: body}} ->
+          {:ok, format_contact(body)}
+
+        {:ok, %Tesla.Env{status: 409, body: body}} ->
+          {:error, {:conflict, body}}
+
+        {:ok, %Tesla.Env{status: status, body: body}} ->
+          {:error, {:api_error, status, body}}
+
+        {:error, reason} ->
+          {:error, {:http_error, reason}}
+      end
+    end)
+  end
+
   # Format a HubSpot contact response into a cleaner structure
   defp format_contact(%{"id" => id, "properties" => properties}) do
     %{
@@ -224,8 +252,10 @@ defmodule SocialScribe.HubspotApi do
 
   defp is_token_error?(%{"status" => "BAD_CLIENT_ID"}), do: true
   defp is_token_error?(%{"status" => "UNAUTHORIZED"}), do: true
+
   defp is_token_error?(%{"message" => msg}) when is_binary(msg) do
     String.contains?(String.downcase(msg), ["token", "expired", "unauthorized", "client id"])
   end
+
   defp is_token_error?(_), do: false
 end

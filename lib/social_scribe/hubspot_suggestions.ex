@@ -5,7 +5,7 @@ defmodule SocialScribe.HubspotSuggestions do
   """
 
   alias SocialScribe.AIContentGeneratorApi
-  alias SocialScribe.HubspotApi
+  alias SocialScribe.HubspotApiBehaviour
   alias SocialScribe.Accounts.UserCredential
 
   @field_labels %{
@@ -38,7 +38,7 @@ defmodule SocialScribe.HubspotSuggestions do
   - apply: boolean indicating whether to apply this update (default false)
   """
   def generate_suggestions(%UserCredential{} = credential, contact_id, meeting) do
-    with {:ok, contact} <- HubspotApi.get_contact(credential, contact_id),
+    with {:ok, contact} <- HubspotApiBehaviour.get_contact(credential, contact_id),
          {:ok, ai_suggestions} <- AIContentGeneratorApi.generate_hubspot_suggestions(meeting) do
       suggestions =
         ai_suggestions
@@ -98,7 +98,12 @@ defmodule SocialScribe.HubspotSuggestions do
     Enum.map(suggestions, fn suggestion ->
       current_value = get_contact_field(contact, suggestion.field)
 
-      %{suggestion | current_value: current_value, has_change: current_value != suggestion.new_value, apply: true}
+      %{
+        suggestion
+        | current_value: current_value,
+          has_change: current_value != suggestion.new_value,
+          apply: true
+      }
     end)
     |> Enum.filter(fn s -> s.has_change end)
   end

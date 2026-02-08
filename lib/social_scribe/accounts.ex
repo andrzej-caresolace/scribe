@@ -316,6 +316,49 @@ defmodule SocialScribe.Accounts do
     Repo.get_by(UserCredential, user_id: user_id, provider: "hubspot")
   end
 
+  @doc """
+  Finds or creates a Salesforce credential for a user.
+  Salesforce uses a single credential per org (identified by user_id from Salesforce).
+  """
+  def find_or_create_salesforce_credential(user, attrs) do
+    case get_user_credential(user, "salesforce", attrs.uid) do
+      nil ->
+        %UserCredential{}
+        |> UserCredential.salesforce_changeset(attrs)
+        |> Repo.insert()
+
+      %UserCredential{} = credential ->
+        credential
+        |> UserCredential.salesforce_changeset(attrs)
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Gets the user's Salesforce credential if one exists.
+  """
+  def get_user_salesforce_credential(user_id) do
+    Repo.get_by(UserCredential, user_id: user_id, provider: "salesforce")
+  end
+
+  @doc """
+  Updates a Salesforce credential's tokens after refresh.
+  """
+  def update_salesforce_credential_tokens(%UserCredential{} = credential, %{
+        "access_token" => token,
+        "instance_url" => instance_url
+      }) do
+    # Salesforce doesn't return expires_in on refresh, tokens are valid until revoked
+    # We set a default expiry of 2 hours to trigger regular refresh
+    credential
+    |> UserCredential.salesforce_changeset(%{
+      token: token,
+      instance_url: instance_url,
+      expires_at: DateTime.add(DateTime.utc_now(), 7200, :second)
+    })
+    |> Repo.update()
+  end
+
   defp get_user_by_oauth_uid(provider, uid) do
     from(c in UserCredential,
       where: c.provider == ^provider and c.uid == ^uid,

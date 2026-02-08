@@ -33,11 +33,14 @@ defmodule SocialScribeWeb.ModalComponents do
   attr :target, :any, default: nil
   attr :error, :string, default: nil
   attr :id, :string, default: "contact-select"
+  attr :on_create_new, :string, default: nil
 
   def contact_select(assigns) do
     ~H"""
     <div class="space-y-1">
-      <label for={"#{@id}-input"} class="block text-sm font-medium text-slate-700">Select Contact</label>
+      <label for={"#{@id}-input"} class="block text-sm font-medium text-slate-700">
+        Select Contact
+      </label>
       <div class="relative">
         <%= if @selected_contact do %>
           <button
@@ -51,7 +54,11 @@ defmodule SocialScribeWeb.ModalComponents do
             class="relative w-full bg-white border border-hubspot-input rounded-lg pl-1.5 pr-10 py-[5px] text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           >
             <span class="flex items-center">
-              <.avatar firstname={@selected_contact.firstname} lastname={@selected_contact.lastname} size={:sm} />
+              <.avatar
+                firstname={@selected_contact.firstname}
+                lastname={@selected_contact.lastname}
+                size={:sm}
+              />
               <span class="ml-1.5 block truncate text-slate-900">
                 {@selected_contact.firstname} {@selected_contact.lastname}
               </span>
@@ -103,7 +110,7 @@ defmodule SocialScribeWeb.ModalComponents do
             phx-click="clear_contact"
             phx-target={@target}
             role="option"
-            aria-selected={"false"}
+            aria-selected="false"
             class="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm text-slate-700 cursor-pointer"
           >
             Clear selection
@@ -111,8 +118,20 @@ defmodule SocialScribeWeb.ModalComponents do
           <div :if={@loading} class="px-4 py-2 text-sm text-gray-500">
             Searching...
           </div>
-          <div :if={!@loading && Enum.empty?(@contacts) && @query != ""} class="px-4 py-2 text-sm text-gray-500">
-            No contacts found
+          <div
+            :if={!@loading && Enum.empty?(@contacts) && @query != ""}
+            class="px-4 py-3 text-sm text-gray-500"
+          >
+            <p>No contacts found for "<span class="font-medium">{@query}</span>"</p>
+            <button
+              :if={@on_create_new}
+              type="button"
+              phx-click={@on_create_new}
+              phx-target={@target}
+              class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-orange-50 text-orange-700 text-xs font-medium hover:bg-orange-100 transition-colors"
+            >
+              <.icon name="hero-user-plus" class="h-4 w-4" /> Create new contact from meeting
+            </button>
           </div>
           <button
             :for={contact <- @contacts}
@@ -121,7 +140,7 @@ defmodule SocialScribeWeb.ModalComponents do
             phx-value-id={contact.id}
             phx-target={@target}
             role="option"
-            aria-selected={"false"}
+            aria-selected="false"
             class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center space-x-3 cursor-pointer"
           >
             <.avatar firstname={contact.firstname} lastname={contact.lastname} size={:sm} />
@@ -303,7 +322,10 @@ defmodule SocialScribeWeb.ModalComponents do
           placeholder="No existing value"
           class={[
             "block w-full shadow-sm text-sm bg-white border border-hubspot-input rounded-[7px] py-1.5 px-2",
-            if(@current_value && @current_value != "", do: "line-through text-slate-500", else: "text-slate-400")
+            if(@current_value && @current_value != "",
+              do: "line-through text-slate-500",
+              else: "text-slate-400"
+            )
           ]}
         />
       </div>
@@ -358,7 +380,10 @@ defmodule SocialScribeWeb.ModalComponents do
           >
             1 update selected
           </span>
-          <button type="button" class="text-xs text-hubspot-hide hover:text-hubspot-hide-hover font-medium">
+          <button
+            type="button"
+            class="text-xs text-hubspot-hide hover:text-hubspot-hide-hover font-medium"
+          >
             Hide details
           </button>
         </div>
@@ -385,7 +410,10 @@ defmodule SocialScribeWeb.ModalComponents do
               placeholder="No existing value"
               class={[
                 "block w-full shadow-sm text-sm bg-white border border-gray-300 rounded-[7px] py-1.5 px-2",
-                if(@suggestion.current_value && @suggestion.current_value != "", do: "line-through text-gray-500", else: "text-gray-400")
+                if(@suggestion.current_value && @suggestion.current_value != "",
+                  do: "line-through text-gray-500",
+                  else: "text-gray-400"
+                )
               ]}
             />
 
@@ -403,16 +431,21 @@ defmodule SocialScribeWeb.ModalComponents do
         </div>
 
         <div class="mt-3 grid grid-cols-[1fr_32px_1fr] items-start gap-6">
-          <button type="button" class="text-xs text-hubspot-link hover:text-hubspot-link-hover font-medium justify-self-start">
+          <button
+            type="button"
+            class="text-xs text-hubspot-link hover:text-hubspot-link-hover font-medium justify-self-start"
+          >
             Update mapping
           </button>
           <span></span>
-          <span :if={@suggestion[:timestamp]} class="text-xs text-slate-500 justify-self-start">Found in transcript<span
+          <span :if={@suggestion[:timestamp]} class="text-xs text-slate-500 justify-self-start">
+            Found in transcript<span
               class="text-hubspot-link hover:underline cursor-help"
               title={@suggestion[:context]}
             >
               ({@suggestion[:timestamp]})
-            </span></span>
+            </span>
+          </span>
         </div>
       </div>
     </div>
@@ -578,7 +611,11 @@ defmodule SocialScribeWeb.ModalComponents do
       data-cancel={JS.exec(@on_cancel, "phx-remove")}
       class="relative z-50 hidden"
     >
-      <div id={"#{@id}-bg"} class="bg-hubspot-overlay/90 fixed inset-0 transition-opacity" aria-hidden="true" />
+      <div
+        id={"#{@id}-bg"}
+        class="bg-hubspot-overlay/90 fixed inset-0 transition-opacity"
+        aria-hidden="true"
+      />
       <div
         class="fixed inset-0 overflow-y-auto"
         aria-labelledby={"#{@id}-title"}
@@ -638,12 +675,72 @@ defmodule SocialScribeWeb.ModalComponents do
       to: "##{id}-container",
       time: 200,
       transition:
-        {"transition-all ease-in duration-200",
-         "opacity-100 translate-y-0 sm:scale-100",
+        {"transition-all ease-in duration-200", "opacity-100 translate-y-0 sm:scale-100",
          "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"}
     )
     |> JS.hide(to: "##{id}", transition: {"block", "block", "hidden"})
     |> JS.remove_class("overflow-hidden", to: "body")
     |> JS.pop_focus()
+  end
+
+  @doc """
+  Renders a Salesforce-styled modal wrapper.
+
+  This is a specialized modal with Salesforce-specific styling:
+  - Salesforce blue overlay color
+  - Reduced padding
+  - No close button (relies on Cancel button in footer)
+
+  ## Examples
+
+      <.salesforce_modal id="salesforce-modal" show on_cancel={JS.patch(~p"/back")}>
+        Modal content here
+      </.salesforce_modal>
+  """
+  attr :id, :string, required: true
+  attr :show, :boolean, default: false
+  attr :on_cancel, JS, default: %JS{}
+  slot :inner_block, required: true
+
+  def salesforce_modal(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      phx-mounted={@show && show_modal(@id)}
+      phx-remove={hide_modal(@id)}
+      data-cancel={JS.exec(@on_cancel, "phx-remove")}
+      class="relative z-50 hidden"
+    >
+      <div
+        id={"#{@id}-bg"}
+        class="bg-slate-900/80 fixed inset-0 transition-opacity"
+        aria-hidden="true"
+      />
+      <div
+        class="fixed inset-0 overflow-y-auto"
+        aria-labelledby={"#{@id}-title"}
+        aria-describedby={"#{@id}-description"}
+        role="dialog"
+        aria-modal="true"
+        tabindex="0"
+      >
+        <div class="flex min-h-full items-center justify-center">
+          <div class="w-full max-w-3xl p-4 sm:p-6 lg:py-8">
+            <.focus_wrap
+              id={"#{@id}-container"}
+              phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
+              phx-key="escape"
+              phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
+              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-white px-10 py-7 shadow-lg ring-1 transition"
+            >
+              <div id={"#{@id}-content"}>
+                {render_slot(@inner_block)}
+              </div>
+            </.focus_wrap>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
   end
 end

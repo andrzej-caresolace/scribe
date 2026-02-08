@@ -20,3 +20,7 @@ Application.put_env(
 )
 
 Application.put_env(:social_scribe, :hubspot_api, SocialScribe.HubspotApiMock)
+
+# Salesforce client mock via spec behaviour
+Mox.defmock(SocialScribe.MockSalesforceClient, for: SocialScribe.SalesforceClientSpec)
+Application.put_env(:social_scribe, :salesforce_client, SocialScribe.MockSalesforceClient)

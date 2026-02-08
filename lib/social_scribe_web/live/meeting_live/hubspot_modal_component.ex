@@ -11,14 +11,30 @@ defmodule SocialScribeWeb.MeetingLive.HubspotModalComponent do
     ~H"""
     <div class="space-y-6">
       <div>
-        <h2 id={"#{@modal_id}-title"} class="text-xl font-medium tracking-tight text-slate-900">Update in HubSpot</h2>
+        <h2 id={"#{@modal_id}-title"} class="text-xl font-medium tracking-tight text-slate-900">
+          Update in HubSpot
+        </h2>
         <p id={"#{@modal_id}-description"} class="mt-2 text-base font-light leading-7 text-slate-500">
           Here are suggested updates to sync with your integrations based on this
           <span class="block">meeting</span>
         </p>
       </div>
 
-      <.contact_select
+      <%= if @creating_new do %>
+        <div class="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+          <.icon name="hero-user-plus" class="h-5 w-5 text-orange-500" />
+          <span class="text-sm font-medium text-orange-700">Creating new contact</span>
+          <button
+            type="button"
+            phx-click="cancel_create"
+            phx-target={@myself}
+            class="ml-auto text-xs text-orange-500 hover:text-orange-700 underline"
+          >
+            Back to search
+          </button>
+        </div>
+      <% else %>
+        <.contact_select
           selected_contact={@selected_contact}
           contacts={@contacts}
           loading={@searching}
@@ -26,14 +42,17 @@ defmodule SocialScribeWeb.MeetingLive.HubspotModalComponent do
           query={@query}
           target={@myself}
           error={@error}
+          on_create_new="start_create_contact"
         />
+      <% end %>
 
-      <%= if @selected_contact do %>
+      <%= if @selected_contact || @creating_new do %>
         <.suggestions_section
           suggestions={@suggestions}
           loading={@loading}
           myself={@myself}
           patch={@patch}
+          creating_new={@creating_new}
         />
       <% end %>
     </div>
@@ -44,6 +63,7 @@ defmodule SocialScribeWeb.MeetingLive.HubspotModalComponent do
   attr :loading, :boolean, required: true
   attr :myself, :any, required: true
   attr :patch, :string, required: true
+  attr :creating_new, :boolean, default: false
 
   defp suggestions_section(assigns) do
     assigns = assign(assigns, :selected_count, Enum.count(assigns.suggestions, & &1.apply))
@@ -53,28 +73,46 @@ defmodule SocialScribeWeb.MeetingLive.HubspotModalComponent do
       <%= if @loading do %>
         <div class="text-center py-8 text-slate-500">
           <.icon name="hero-arrow-path" class="h-6 w-6 animate-spin mx-auto mb-2" />
-          <p>Generating suggestions...</p>
+          <p>
+            <%= if @creating_new do %>
+              Extracting contact info from transcript...
+            <% else %>
+              Generating suggestions...
+            <% end %>
+          </p>
         </div>
       <% else %>
         <%= if Enum.empty?(@suggestions) do %>
           <.empty_state
-            message="No update suggestions found from this meeting."
+            message={
+              if @creating_new,
+                do: "No contact information found in this meeting.",
+                else: "No update suggestions found from this meeting."
+            }
             submessage="The AI didn't detect any new contact information in the transcript."
           />
         <% else %>
-          <form phx-submit="apply_updates" phx-change="toggle_suggestion" phx-target={@myself}>
+          <form
+            phx-submit={if @creating_new, do: "create_contact", else: "apply_updates"}
+            phx-change="toggle_suggestion"
+            phx-target={@myself}
+          >
             <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
               <.suggestion_card :for={suggestion <- @suggestions} suggestion={suggestion} />
             </div>
 
             <.modal_footer
               cancel_patch={@patch}
-              submit_text="Update HubSpot"
+              submit_text={if @creating_new, do: "Create in HubSpot", else: "Update HubSpot"}
               submit_class="bg-hubspot-button hover:bg-hubspot-button-hover"
               disabled={@selected_count == 0}
               loading={@loading}
-              loading_text="Updating..."
-              info_text={"1 object, #{@selected_count} fields in 1 integration selected to update"}
+              loading_text={if @creating_new, do: "Creating...", else: "Updating..."}
+              info_text={
+                if @creating_new,
+                  do: "#{@selected_count} fields to create new contact",
+                  else: "1 object, #{@selected_count} fields in 1 integration selected to update"
+              }
             />
           </form>
         <% end %>
@@ -98,11 +136,13 @@ defmodule SocialScribeWeb.MeetingLive.HubspotModalComponent do
       |> assign_new(:searching, fn -> false end)
       |> assign_new(:dropdown_open, fn -> false end)
       |> assign_new(:error, fn -> nil end)
+      |> assign_new(:creating_new, fn -> false end)
 
     {:ok, socket}
   end
 
-  defp maybe_select_all_suggestions(socket, %{suggestions: suggestions}) when is_list(suggestions) do
+  defp maybe_select_all_suggestions(socket, %{suggestions: suggestions})
+       when is_list(suggestions) do
     assign(socket, suggestions: Enum.map(suggestions, &Map.put(&1, :apply, true)))
   end
 
@@ -138,7 +178,10 @@ defmodule SocialScribeWeb.MeetingLive.HubspotModalComponent do
     else
       # When opening dropdown with selected contact, search for similar contacts
       socket = assign(socket, dropdown_open: true, searching: true)
-      query = "#{socket.assigns.selected_contact.firstname} #{socket.assigns.selected_contact.lastname}"
+
+      query =
+        "#{socket.assigns.selected_contact.firstname} #{socket.assigns.selected_contact.lastname}"
+
       send(self(), {:hubspot_search, query, socket.assigns.credential})
       {:noreply, socket}
     end
@@ -149,15 +192,21 @@ defmodule SocialScribeWeb.MeetingLive.HubspotModalComponent do
     contact = Enum.find(socket.assigns.contacts, &(&1.id == contact_id))
 
     if contact do
-      socket = assign(socket,
-        loading: true,
-        selected_contact: contact,
-        error: nil,
-        dropdown_open: false,
-        query: "",
-        suggestions: []
+      socket =
+        assign(socket,
+          loading: true,
+          selected_contact: contact,
+          error: nil,
+          dropdown_open: false,
+          query: "",
+          suggestions: []
+        )
+
+      send(
+        self(),
+        {:generate_suggestions, contact, socket.assigns.meeting, socket.assigns.credential}
       )
-      send(self(), {:generate_suggestions, contact, socket.assigns.meeting, socket.assigns.credential})
+
       {:noreply, socket}
     else
       {:noreply, assign(socket, error: "Contact not found")}
@@ -213,12 +262,64 @@ defmodule SocialScribeWeb.MeetingLive.HubspotModalComponent do
         Map.put(acc, field, Map.get(values, field, ""))
       end)
 
-    send(self(), {:apply_hubspot_updates, updates, socket.assigns.selected_contact, socket.assigns.credential})
+    send(
+      self(),
+      {:apply_hubspot_updates, updates, socket.assigns.selected_contact,
+       socket.assigns.credential}
+    )
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("apply_updates", _params, socket) do
     {:noreply, assign(socket, error: "Please select at least one field to update")}
+  end
+
+  @impl true
+  def handle_event("start_create_contact", _params, socket) do
+    socket =
+      assign(socket,
+        creating_new: true,
+        loading: true,
+        dropdown_open: false,
+        query: "",
+        contacts: [],
+        error: nil
+      )
+
+    send(self(), {:generate_suggestions_for_new_contact, :hubspot, socket.assigns.meeting})
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("cancel_create", _params, socket) do
+    {:noreply,
+     assign(socket,
+       creating_new: false,
+       suggestions: [],
+       loading: false,
+       error: nil
+     )}
+  end
+
+  @impl true
+  def handle_event("create_contact", %{"apply" => selected, "values" => values}, socket) do
+    socket = assign(socket, loading: true, error: nil)
+
+    properties =
+      selected
+      |> Map.keys()
+      |> Enum.reduce(%{}, fn field, acc ->
+        Map.put(acc, field, Map.get(values, field, ""))
+      end)
+
+    send(self(), {:create_hubspot_contact, properties, socket.assigns.credential})
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("create_contact", _params, socket) do
+    {:noreply, assign(socket, error: "Please select at least one field")}
   end
 end
