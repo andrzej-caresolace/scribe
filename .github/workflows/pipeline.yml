@@ -1,0 +1,72 @@
+name: Elixir Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  MIX_ENV: test
+  ELIXIR_VER: "1.17"
+  OTP_VER: "26"
+
+jobs:
+  quality:
+    name: Code quality & tests
+    runs-on: ubuntu-22.04
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: social_scribe_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Elixir & Erlang
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VER }}
+          otp-version: ${{ env.OTP_VER }}
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ runner.os }}-${{ env.ELIXIR_VER }}-${{ hashFiles('mix.lock') }}
+          restore-keys: mix-${{ runner.os }}-${{ env.ELIXIR_VER }}-
+
+      - name: Fetch & compile deps
+        run: |
+          mix deps.get
+          mix deps.compile
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Compile (warnings as errors)
+        run: mix compile --warnings-as-errors
+
+      - name: Prepare database
+        env:
+          DATABASE_URL: ecto://postgres:postgres@localhost:5432/social_scribe_test
+        run: mix ecto.setup
+
+      - name: Run test suite
+        env:
+          DATABASE_URL: ecto://postgres:postgres@localhost:5432/social_scribe_test
+        run: mix test --trace
+
