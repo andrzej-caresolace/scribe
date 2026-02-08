@@ -24,7 +24,7 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
      |> assign(crm_sources: crm_sources)
      |> assign(sessions: CrmCopilot.sessions_for_user(owner.id))
      |> assign(active_session: nil, turns: [])
-     |> assign(pinned_contact: nil, mention_hits: [], mention_q: nil)
+     |> assign(pinned_contact: nil, mention_hits: [], mention_q: nil, mention_searching: false)
      |> assign(thinking: false, panel: :dialogue)}
   end
 
@@ -85,13 +85,18 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
      end)}
   end
 
+  def handle_event("mention_lookup", %{"q" => q}, socket) when byte_size(q) < 2 do
+    # Show the popup immediately but don't search yet (need 2+ chars)
+    {:noreply, assign(socket, mention_q: q, mention_hits: [], mention_searching: false)}
+  end
+
   def handle_event("mention_lookup", %{"q" => q}, socket) do
     send(self(), {:run_mention_search, q})
-    {:noreply, assign(socket, mention_q: q)}
+    {:noreply, assign(socket, mention_q: q, mention_searching: true)}
   end
 
   def handle_event("dismiss_mentions", _p, socket) do
-    {:noreply, assign(socket, mention_hits: [], mention_q: nil)}
+    {:noreply, assign(socket, mention_hits: [], mention_q: nil, mention_searching: false)}
   end
 
   def handle_event("pin_contact", %{"cid" => cid, "label" => label, "src" => src}, socket) do
@@ -124,7 +129,7 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
   @impl true
   def handle_info({:run_mention_search, q}, socket) do
     hits = do_mention_search_all(q, socket.assigns.crm_sources)
-    {:noreply, assign(socket, mention_hits: hits)}
+    {:noreply, assign(socket, mention_hits: hits, mention_searching: false)}
   end
 
   def handle_info({:copilot_thinking, sess, human_turn, contact_snapshot}, socket) do
@@ -200,7 +205,13 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
     {:noreply,
      socket
      |> assign(active_session: sess, turns: socket.assigns.turns ++ [human_turn])
-     |> assign(thinking: true, pinned_contact: nil, mention_hits: [], mention_q: nil)
+     |> assign(
+       thinking: true,
+       pinned_contact: nil,
+       mention_hits: [],
+       mention_q: nil,
+       mention_searching: false
+     )
      |> maybe_push_new_session_url(sess)}
   end
 

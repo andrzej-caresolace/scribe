@@ -47,11 +47,11 @@ Hooks.InputAssistant = {
             this._input.style.height = next + "px"
         }
 
-        // Check for @mention pattern while typing
+        // Check for @mention pattern while typing — triggers on @ alone or @chars
         const checkForMention = () => {
             const pos = this._input.selectionStart
             const preceding = this._input.value.slice(0, pos)
-            const mentionMatch = preceding.match(/@(\w{2,})$/)
+            const mentionMatch = preceding.match(/@(\w*)$/)
             if (mentionMatch) {
                 this.pushEvent("mention_lookup", { q: mentionMatch[1] })
             } else {
@@ -82,6 +82,7 @@ Hooks.InputAssistant = {
             this._input.selectionEnd = pos + 1
             this._input.focus()
             autoGrow()
+            this.pushEvent("mention_lookup", { q: "" })
         })
 
         // When server pins a contact, splice name into textarea

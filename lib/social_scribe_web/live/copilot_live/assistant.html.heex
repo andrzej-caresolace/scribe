@@ -164,23 +164,86 @@
         phx-hook="InputAssistant"
         class="relative border border-blue-400 rounded-xl bg-white shadow-sm"
       >
-        <%!-- Mention popup --%>
-        <%= if @mention_hits != [] do %>
-          <div class="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto z-20">
-            <%= for hit <- @mention_hits do %>
-              <button
-                phx-click="pin_contact"
-                phx-value-cid={hit.id}
-                phx-value-label={hit.label}
-                phx-value-src={hit.source}
-                class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 text-left transition-colors"
-              >
-                <.crm_icon provider={String.to_existing_atom(hit.source)} />
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900 truncate">{hit.label}</p>
-                  <p class="text-[11px] text-gray-400 capitalize">{hit.source}</p>
+        <%!-- Mention popup (Slack-style) --%>
+        <%= if not is_nil(@mention_q) do %>
+          <div class="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-20">
+            <%!-- Header --%>
+            <div class="px-3 py-2 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Contacts
+              </p>
+            </div>
+
+            <%= cond do %>
+              <% @crm_sources == [] -> %>
+                <%!-- No CRM connected --%>
+                <div class="px-4 py-4 flex items-start gap-3">
+                  <span class="mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                    <svg
+                      class="w-4 h-4 text-amber-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="2"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+                      />
+                    </svg>
+                  </span>
+                  <div>
+                    <p class="text-sm font-medium text-gray-800">No CRM connected</p>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                      Go to
+                      <.link navigate={~p"/dashboard/settings"} class="text-indigo-600 hover:underline font-medium">
+                        Settings
+                      </.link>
+                      to connect HubSpot or Salesforce.
+                    </p>
+                  </div>
                 </div>
-              </button>
+
+              <% @mention_searching -> %>
+                <%!-- Loading --%>
+                <div class="px-4 py-4 flex items-center gap-3 text-sm text-gray-400">
+                  <span class="w-5 h-5 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin flex-shrink-0">
+                  </span>
+                  Searching contacts…
+                </div>
+
+              <% byte_size(@mention_q) < 2 -> %>
+                <%!-- Hint: type more --%>
+                <div class="px-4 py-4 text-sm text-gray-400">
+                  Type <span class="font-mono bg-gray-100 text-gray-600 px-1 rounded">@name</span>
+                  to search and tag a contact
+                </div>
+
+              <% @mention_hits == [] -> %>
+                <%!-- No results --%>
+                <div class="px-4 py-4 text-sm text-gray-400">
+                  No contacts found for
+                  "<span class="font-medium text-gray-600">{@mention_q}</span>"
+                </div>
+
+              <% true -> %>
+                <%!-- Results --%>
+                <%= for hit <- @mention_hits do %>
+                  <button
+                    phx-click="pin_contact"
+                    phx-value-cid={hit.id}
+                    phx-value-label={hit.label}
+                    phx-value-src={hit.source}
+                    class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-indigo-50 text-left transition-colors"
+                  >
+                    <.crm_icon provider={String.to_existing_atom(hit.source)} />
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900 truncate">{hit.label}</p>
+                      <p class="text-[11px] text-gray-400 capitalize">{hit.source}</p>
+                    </div>
+                  </button>
+                <% end %>
             <% end %>
           </div>
         <% end %>
