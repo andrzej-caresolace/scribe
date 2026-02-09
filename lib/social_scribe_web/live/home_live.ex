@@ -70,7 +70,15 @@ defmodule SocialScribeWeb.HomeLive do
 
   @impl true
   def handle_info(:sync_calendars, socket) do
-    CalendarSyncronizer.sync_events_for_user(socket.assigns.current_user)
+    try do
+      CalendarSyncronizer.sync_events_for_user(socket.assigns.current_user)
+    rescue
+      e ->
+        Logger.error("Calendar sync failed: #{inspect(e)}")
+    catch
+      kind, reason ->
+        Logger.error("Calendar sync failed (#{kind}): #{inspect(reason)}")
+    end
 
     events = Calendar.list_upcoming_events(socket.assigns.current_user)
 
