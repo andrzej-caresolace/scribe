@@ -21,7 +21,7 @@ ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 FROM ${BUILDER_IMAGE} as builder
 
 # install build dependencies
-RUN apt-get update -y && apt-get install -y build-essential git \
+RUN apt-get update -y && apt-get install -y build-essential git curl ca-certificates npm \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # prepare build dir
@@ -50,6 +50,13 @@ COPY priv priv
 COPY lib lib
 
 COPY assets assets
+
+# Install tailwind and esbuild via npm (avoids binary download issues on remote builders)
+RUN npm install -g tailwindcss@3.4.3 esbuild@0.17.11
+
+# Point the hex wrappers at the npm-installed binaries
+ENV TAILWIND_PATH=/usr/local/bin/tailwindcss
+ENV ESBUILD_PATH=/usr/local/bin/esbuild
 
 # compile assets
 RUN mix assets.deploy
