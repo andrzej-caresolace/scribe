@@ -332,6 +332,7 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
   @doc false
   attr :provider, :atom, required: true
   attr :size, :atom, default: :sm
+  attr :class, :string, default: ""
 
   def crm_icon(%{provider: :hubspot} = assigns) do
     size_class =
@@ -344,7 +345,7 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
 
     ~H"""
     <span
-      class={"#{@size_class} rounded-full bg-[#FF7A59] flex items-center justify-center flex-shrink-0"}
+      class={"#{@size_class} rounded-full bg-[#FF7A59] flex items-center justify-center flex-shrink-0 #{@class}"}
       title="HubSpot"
     >
       <span class="text-white font-bold leading-none">H</span>
@@ -363,7 +364,7 @@ defmodule SocialScribeWeb.CopilotLive.Assistant do
 
     ~H"""
     <span
-      class={"#{@size_class} rounded-full bg-[#0176D3] flex items-center justify-center flex-shrink-0"}
+      class={"#{@size_class} rounded-full bg-[#0176D3] flex items-center justify-center flex-shrink-0 #{@class}"}
       title="Salesforce"
     >
       <svg class="w-3 h-3" viewBox="0 0 24 24" fill="white">
