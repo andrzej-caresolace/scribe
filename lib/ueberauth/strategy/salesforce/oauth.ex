@@ -2,11 +2,12 @@ defmodule Ueberauth.Strategy.Salesforce.OAuth do
   @moduledoc """
   OAuth2 for Salesforce.
 
-  Add `client_id` and `client_secret` to your configuration:
+  Add `client_id`, `client_secret`, and `redirect_uri` to your configuration:
 
       config :ueberauth, Ueberauth.Strategy.Salesforce.OAuth,
         client_id: System.get_env("SALESFORCE_CLIENT_ID"),
-        client_secret: System.get_env("SALESFORCE_CLIENT_SECRET")
+        client_secret: System.get_env("SALESFORCE_CLIENT_SECRET"),
+        redirect_uri: System.get_env("SALESFORCE_REDIRECT_URI")
   """
 
   use OAuth2.Strategy
@@ -76,13 +77,12 @@ defmodule Ueberauth.Strategy.Salesforce.OAuth do
   end
 
   @doc """
-  Fetches user info from Salesforce identity endpoint.
-  The identity URL is returned in the token response as `id`.
+  Fetches user info from Salesforce using the instance URL and access token.
   """
-  def get_user_info(access_token, identity_url) do
-    headers = [{"Authorization", "Bearer #{access_token}"}]
+  def get_user_info(instance_url, access_token) do
+    url = "#{instance_url}/services/oauth2/userinfo"
 
-    case Tesla.get(http_client(), identity_url, headers: headers) do
+    case Tesla.get(http_client(), url, headers: [{"authorization", "Bearer #{access_token}"}]) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:ok, body}
 
