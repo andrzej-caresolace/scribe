@@ -91,9 +91,11 @@
           <% else %>
             <div class="flex items-center gap-2 mt-1">
               <span class="text-xs text-gray-400">Connected:</span>
-              <%= for src <- @crm_sources do %>
-                <.crm_icon provider={src.provider} />
-              <% end %>
+              <div class="flex items-center -space-x-1.5">
+                <%= for src <- @crm_sources do %>
+                  <.crm_icon provider={src.provider} class="ring-2 ring-white" />
+                <% end %>
+              </div>
             </div>
           <% end %>
         </div>
@@ -287,9 +289,11 @@
             <%= if @crm_sources == [] do %>
               <span class="text-[11px] text-gray-400 italic">none</span>
             <% else %>
-              <%= for src <- @crm_sources do %>
-                <.crm_icon provider={src.provider} />
-              <% end %>
+              <div class="flex items-center -space-x-1.5">
+                <%= for src <- @crm_sources do %>
+                  <.crm_icon provider={src.provider} class="ring-2 ring-white" />
+                <% end %>
+              </div>
             <% end %>
           </div>
           <button
