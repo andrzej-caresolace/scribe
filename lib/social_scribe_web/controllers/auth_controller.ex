@@ -142,10 +142,10 @@ defmodule SocialScribeWeb.AuthController do
     Logger.info("Salesforce OAuth")
     Logger.info(inspect(auth))
 
-    # Salesforce user_id from the identity endpoint
     salesforce_user_id = to_string(auth.uid)
-    # Instance URL is needed for all API calls
-    instance_url = auth.credentials.other.instance_url
+
+    instance_url =
+      auth.credentials.other[:instance_url] || auth.credentials.other["instance_url"]
 
     credential_attrs = %{
       user_id: user.id,

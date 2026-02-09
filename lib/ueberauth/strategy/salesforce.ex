@@ -18,24 +18,40 @@ defmodule Ueberauth.Strategy.Salesforce do
   def handle_request!(conn) do
     scopes = conn.params["scope"] || option(conn, :default_scope)
 
+    # PKCE: generate code_verifier and code_challenge
+    code_verifier = generate_code_verifier()
+    code_challenge = generate_code_challenge(code_verifier)
+
     opts =
-      [scope: scopes, redirect_uri: callback_url(conn)]
+      [
+        scope: scopes,
+        redirect_uri: callback_url(conn),
+        code_challenge: code_challenge,
+        code_challenge_method: "S256"
+      ]
       |> with_optional(:prompt, conn)
       |> with_param(:prompt, conn)
       |> with_state_param(conn)
 
-    redirect!(conn, Ueberauth.Strategy.Salesforce.OAuth.authorize_url!(opts))
+    conn
+    |> Plug.Conn.put_session(:salesforce_code_verifier, code_verifier)
+    |> redirect!(Ueberauth.Strategy.Salesforce.OAuth.authorize_url!(opts))
   end
 
   @doc """
   Handles the callback from Salesforce.
   """
   def handle_callback!(%Plug.Conn{params: %{"code" => code}} = conn) do
+    code_verifier = Plug.Conn.get_session(conn, :salesforce_code_verifier)
     opts = [redirect_uri: callback_url(conn)]
 
-    case Ueberauth.Strategy.Salesforce.OAuth.get_access_token([code: code], opts) do
+    params = [code: code, code_verifier: code_verifier]
+
+    case Ueberauth.Strategy.Salesforce.OAuth.get_access_token(params, opts) do
       {:ok, token} ->
-        fetch_user(conn, token)
+        conn
+        |> Plug.Conn.delete_session(:salesforce_code_verifier)
+        |> fetch_user(token)
 
       {:error, {error_code, error_description}} ->
         set_errors!(conn, [error(error_code, error_description)])
@@ -59,7 +75,12 @@ defmodule Ueberauth.Strategy.Salesforce do
   Fetches the uid field from the response.
   """
   def uid(conn) do
-    conn.private.salesforce_user["user_id"]
+    uid_field =
+      conn
+      |> option(:uid_field)
+      |> to_string()
+
+    conn.private.salesforce_user[uid_field]
   end
 
   @doc """
@@ -69,16 +90,13 @@ defmodule Ueberauth.Strategy.Salesforce do
     token = conn.private.salesforce_token
 
     %Credentials{
-      expires: token.expires_at != nil,
+      expires: true,
       expires_at: token.expires_at,
       scopes: String.split(token.other_params["scope"] || "", " "),
       token: token.access_token,
       refresh_token: token.refresh_token,
       token_type: token.token_type,
-      other: %{
-        instance_url: token.other_params["instance_url"],
-        id: token.other_params["id"]
-      }
+      other: %{instance_url: token.other_params["instance_url"]}
     }
   end
 
@@ -90,11 +108,7 @@ defmodule Ueberauth.Strategy.Salesforce do
 
     %Info{
       email: user["email"],
-      name: user["display_name"],
-      first_name: user["first_name"],
-      last_name: user["last_name"],
-      nickname: user["nick_name"],
-      image: user["photos"]["thumbnail"]
+      name: user["name"]
     }
   end
 
@@ -112,11 +126,9 @@ defmodule Ueberauth.Strategy.Salesforce do
 
   defp fetch_user(conn, token) do
     conn = put_private(conn, :salesforce_token, token)
+    instance_url = token.other_params["instance_url"]
 
-    # Salesforce returns the identity URL in the token response
-    identity_url = token.other_params["id"]
-
-    case Ueberauth.Strategy.Salesforce.OAuth.get_user_info(token.access_token, identity_url) do
+    case Ueberauth.Strategy.Salesforce.OAuth.get_user_info(instance_url, token.access_token) do
       {:ok, user} ->
         put_private(conn, :salesforce_user, user)
 
@@ -135,5 +147,15 @@ defmodule Ueberauth.Strategy.Salesforce do
 
   defp option(conn, key) do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
+  end
+
+  defp generate_code_verifier do
+    :crypto.strong_rand_bytes(32)
+    |> Base.url_encode64(padding: false)
+  end
+
+  defp generate_code_challenge(verifier) do
+    :crypto.hash(:sha256, verifier)
+    |> Base.url_encode64(padding: false)
   end
 end
